@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient'
+import { supabase } from '@/lib/supabaseClient'
 import type { CafeOrder, CafeOrderRow, OrderLine } from '@/types/order'
 
 const LOCAL_KEY = 'cafe-turgutlu-orders-v1'
@@ -90,10 +90,6 @@ export async function submitOrder(input: {
     createdAt: new Date().toISOString(),
   }
   writeLocalOrders([order, ...readLocalOrders()])
-}
-
-export function getOrderStorageKind(): 'supabase' | 'local' {
-  return isSupabaseConfigured() ? 'supabase' : 'local'
 }
 
 export function subscribeOrders(onOrders: (orders: CafeOrder[]) => void): () => void {

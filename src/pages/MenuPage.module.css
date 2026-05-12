@@ -6,6 +6,16 @@
   padding-bottom: 5.5rem;
 }
 
+.staff {
+  min-height: 0;
+}
+
+.staffMasaRow {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 0.5rem;
+}
+
 .header {
   position: sticky;
   top: 0;

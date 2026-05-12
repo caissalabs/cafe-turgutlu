@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { AdminHomePage } from '@/pages/AdminHomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MenuPage } from '@/pages/MenuPage'
-import { QrCodesPage } from '@/pages/QrCodesPage'
 
 function RootRedirect() {
   const { isAuthenticated } = useAuth()
@@ -23,7 +22,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Layout />}>
               <Route index element={<AdminHomePage />} />
-              <Route path="qr" element={<QrCodesPage />} />
+              <Route path="menu" element={<MenuPage variant="staff" />} />
             </Route>
           </Route>
           <Route path="/" element={<RootRedirect />} />

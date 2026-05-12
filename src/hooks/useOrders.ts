@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { CafeOrder } from '@/types/order'
-import {
-  fetchAllOrders,
-  getOrderStorageKind,
-  subscribeOrders,
-} from '@/services/orderRepository'
+import { fetchAllOrders, subscribeOrders } from '@/services/orderRepository'
 
 export function useOrders() {
   const [orders, setOrders] = useState<CafeOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const storageKind = getOrderStorageKind()
 
   const refreshOrders = useCallback(async () => {
     try {
@@ -53,5 +48,5 @@ export function useOrders() {
     }
   }, [])
 
-  return { orders, loading, error, storageKind, refreshOrders }
+  return { orders, loading, error, refreshOrders }
 }

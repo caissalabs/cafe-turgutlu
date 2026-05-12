@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { TABLE_COUNT } from '@/constants/tables'
 
 const SESSION_KEY = 'cafe-turgutlu-masa'
@@ -21,6 +21,7 @@ function readSessionMasa(): number | null {
 }
 
 export function useMasaNumber() {
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const urlMasa = useMemo(
@@ -41,9 +42,9 @@ export function useMasaNumber() {
     (n: number) => {
       if (n < 1 || n > TABLE_COUNT) return
       sessionStorage.setItem(SESSION_KEY, String(n))
-      navigate(`/menu?masa=${n}`, { replace: true })
+      navigate(`${location.pathname}?masa=${n}`, { replace: true })
     },
-    [navigate],
+    [navigate, location.pathname],
   )
 
   return {

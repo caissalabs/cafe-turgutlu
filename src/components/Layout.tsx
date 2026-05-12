@@ -30,14 +30,11 @@ export function Layout({ children }: LayoutProps) {
               Masalar
             </NavLink>
             <NavLink
-              to="/home/qr"
+              to="/home/menu"
               className={({ isActive }) =>
                 cn(styles.navItem, isActive && styles.navItemActive)
               }
             >
-              QR kodlar
-            </NavLink>
-            <NavLink to="/menu" className={styles.menuPublic}>
               Menü
             </NavLink>
             <button

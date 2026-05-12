@@ -6,14 +6,21 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useMasaNumber } from '@/hooks/useMasaNumber'
 import { submitOrder } from '@/services/orderRepository'
 import type { OrderLine } from '@/types/order'
+import { cn } from '@/utils/cn'
 import styles from './MenuPage.module.css'
+
+export type MenuPageProps = {
+  /** `staff`: yalnızca giriş yapılmış `/home/menu` rotası (Layout içinde). */
+  variant?: 'public' | 'staff'
+}
 
 function lineKey(categoryId: string, itemName: string) {
   return `${categoryId}::${itemName}`
 }
 
-export function MenuPage() {
-  useDocumentTitle('Cafe Turgutlu — Menü')
+export function MenuPage({ variant = 'public' }: MenuPageProps) {
+  const staff = variant === 'staff'
+  useDocumentTitle(staff ? 'Cafe Turgutlu — Menü (yönetim)' : 'Cafe Turgutlu — Menü')
   const { masa, setMasa, hasMasa } = useMasaNumber()
   const [cart, setCart] = useState<Record<string, OrderLine>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -88,19 +95,29 @@ export function MenuPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <span className={styles.brand}>Cafe Turgutlu</span>
-          <div className={styles.headerMeta}>
-            {hasMasa ? (
-              <span className={styles.masaBadge}>Masa {masa}</span>
-            ) : (
-              <span className={styles.masaWarn}>Masa seçilmedi</span>
-            )}
+    <div className={cn(styles.page, staff && styles.staff)}>
+      {!staff ? (
+        <header className={styles.header}>
+          <div className={styles.headerInner}>
+            <span className={styles.brand}>Cafe Turgutlu</span>
+            <div className={styles.headerMeta}>
+              {hasMasa ? (
+                <span className={styles.masaBadge}>Masa {masa}</span>
+              ) : (
+                <span className={styles.masaWarn}>Masa seçilmedi</span>
+              )}
+            </div>
           </div>
+        </header>
+      ) : (
+        <div className={styles.staffMasaRow}>
+          {hasMasa ? (
+            <span className={styles.masaBadge}>Masa {masa}</span>
+          ) : (
+            <span className={styles.masaWarn}>Masa seçilmedi</span>
+          )}
         </div>
-      </header>
+      )}
 
       <main className={styles.main}>
         <h1 className={styles.title}>Menü</h1>
@@ -129,12 +146,14 @@ export function MenuPage() {
           </select>
         </div>
 
-        <p className={styles.qrHint}>
-          QR kodları masanıza özel adresle gelir:{' '}
-          <code className={styles.code}>
-            …/menu?masa=<strong>3</strong>
-          </code>
-        </p>
+        {!staff ? (
+          <p className={styles.qrHint}>
+            QR kodları masanıza özel adresle gelir:{' '}
+            <code className={styles.code}>
+              …/menu?masa=<strong>3</strong>
+            </code>
+          </p>
+        ) : null}
 
         {feedback ? (
           <div
@@ -199,7 +218,7 @@ export function MenuPage() {
         </div>
       </main>
 
-      <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+      {!staff ? <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer> : null}
 
       <div className={styles.cartBar} role="region" aria-label="Sepet">
         <div className={styles.cartInner}>
