@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { MENU_CATEGORIES, formatPriceTry } from '@/constants/menu'
 import { TABLE_COUNT } from '@/constants/tables'
+import { clearMasaSession, useMasaNumber } from '@/hooks/useMasaNumber'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
-import { useMasaNumber } from '@/hooks/useMasaNumber'
 import { submitOrder } from '@/services/orderRepository'
 import type { OrderLine } from '@/types/order'
 import { cn } from '@/utils/cn'
@@ -21,13 +21,15 @@ function lineKey(categoryId: string, itemName: string) {
 
 export function MenuPage({ variant = 'public' }: MenuPageProps) {
   const staff = variant === 'staff'
+  const navigate = useNavigate()
+  const masaOpts = staff ? undefined : { source: 'url-only' as const }
+  const { masa, setMasa, hasMasa } = useMasaNumber(masaOpts)
+
   useDocumentTitle(staff ? 'Cafe Turgutlu — Menü (yönetim)' : 'Cafe Turgutlu — Menü')
-  const { masa, setMasa, hasMasa } = useMasaNumber()
+
   const [cart, setCart] = useState<Record<string, OrderLine>>({})
   const [submitting, setSubmitting] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(
-    null,
-  )
+  const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   const cartLines = useMemo(() => Object.values(cart).filter((l) => l.qty > 0), [cart])
   const cartTotal = useMemo(
@@ -62,10 +64,6 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   const handleSubmit = async () => {
     if (!hasMasa || masa == null) {
-      setFeedback({
-        type: 'err',
-        text: 'Önce masanızı seçin veya masanıza özel QR kodu okutun.',
-      })
       return
     }
     if (cartLines.length === 0) {
@@ -81,10 +79,15 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
         totalTry: cartTotal,
       })
       setCart({})
-      setFeedback({
-        type: 'ok',
-        text: `Siparişiniz alındı (Masa ${masa}). Afiyet olsun!`,
-      })
+      if (!staff) {
+        clearMasaSession()
+        navigate('/menu/tamamlandi', { replace: true })
+      } else {
+        setFeedback({
+          type: 'ok',
+          text: `Sipariş gönderildi (Masa ${masa}).`,
+        })
+      }
     } catch (e) {
       setFeedback({
         type: 'err',
@@ -95,6 +98,27 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
     }
   }
 
+  if (!staff && !hasMasa) {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerInner}>
+            <span className={styles.brand}>Cafe Turgutlu</span>
+          </div>
+        </header>
+        <main className={styles.main}>
+          <div className={styles.qrGate}>
+            <h1 className={styles.title}>Menü</h1>
+            <p className={styles.qrGateText}>
+              Sipariş vermek için <strong>masanızdaki QR kodu</strong> okutmanız gerekir.
+            </p>
+          </div>
+        </main>
+        <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+      </div>
+    )
+  }
+
   return (
     <div className={cn(styles.page, staff && styles.staff)}>
       {!staff ? (
@@ -102,11 +126,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
           <div className={styles.headerInner}>
             <span className={styles.brand}>Cafe Turgutlu</span>
             <div className={styles.headerMeta}>
-              {hasMasa ? (
-                <span className={styles.masaBadge}>Masa {masa}</span>
-              ) : (
-                <span className={styles.masaWarn}>Masa seçilmedi</span>
-              )}
+              <span className={styles.masaBadge}>Masa {masa}</span>
             </div>
           </div>
         </header>
@@ -129,42 +149,35 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
         <h1 className={styles.title}>Menü</h1>
         <p className={styles.subtitle}>Yiyecek ve içeceklerimiz</p>
 
-        <div className={styles.masaRow}>
-          <label htmlFor="masa-select" className={styles.masaLabel}>
-            Masa numarası (QR yoksa)
-          </label>
-          <select
-            id="masa-select"
-            className={styles.masaSelect}
-            value={masa ?? ''}
-            onChange={(ev) => {
-              const v = ev.target.value
-              if (v === '') return
-              setMasa(Number.parseInt(v, 10))
-            }}
-          >
-            <option value="">Seçin…</option>
-            {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                Masa {n}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {!staff ? (
-          <p className={styles.qrHint}>
-            QR kodları masanıza özel adresle gelir:{' '}
-            <code className={styles.code}>
-              …/menu?masa=<strong>3</strong>
-            </code>
-          </p>
+        {staff ? (
+          <div className={styles.masaRow}>
+            <label htmlFor="masa-select" className={styles.masaLabel}>
+              Masa numarası (QR yoksa)
+            </label>
+            <select
+              id="masa-select"
+              className={styles.masaSelect}
+              value={masa ?? ''}
+              onChange={(ev) => {
+                const v = ev.target.value
+                if (v === '') return
+                setMasa(Number.parseInt(v, 10))
+              }}
+            >
+              <option value="">Seçin…</option>
+              {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  Masa {n}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : null}
 
         {feedback ? (
           <div
             className={feedback.type === 'ok' ? styles.feedbackOk : styles.feedbackErr}
-            role="status"
+            role={feedback.type === 'err' ? 'alert' : 'status'}
             aria-live="polite"
           >
             {feedback.text}

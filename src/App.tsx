@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { AdminHomePage } from '@/pages/AdminHomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MenuPage } from '@/pages/MenuPage'
+import { OrderSuccessPage } from '@/pages/OrderSuccessPage'
 
 function RootRedirect() {
   const { isAuthenticated } = useAuth()
@@ -18,6 +19,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/menu/tamamlandi" element={<OrderSuccessPage />} />
           <Route path="/menu" element={<MenuPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Layout />}>
