@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { cn } from '@/utils/cn'
 import styles from './Layout.module.css'
 
 type LayoutProps = {
@@ -19,6 +20,23 @@ export function Layout({ children }: LayoutProps) {
             Cafe Turgutlu
           </NavLink>
           <nav className={styles.nav} aria-label="Yönetim">
+            <NavLink
+              to="/home"
+              end
+              className={({ isActive }) =>
+                cn(styles.navItem, isActive && styles.navItemActive)
+              }
+            >
+              Masalar
+            </NavLink>
+            <NavLink
+              to="/home/qr"
+              className={({ isActive }) =>
+                cn(styles.navItem, isActive && styles.navItemActive)
+              }
+            >
+              QR kodlar
+            </NavLink>
             <NavLink to="/menu" className={styles.menuPublic}>
               Menü
             </NavLink>

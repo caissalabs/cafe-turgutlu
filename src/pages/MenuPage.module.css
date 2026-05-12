@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  padding-bottom: 5.5rem;
 }
 
 .header {
@@ -18,6 +19,10 @@
   max-width: 640px;
   margin: 0 auto;
   padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .brand {
@@ -25,6 +30,27 @@
   font-size: 1.1rem;
   letter-spacing: -0.02em;
   color: var(--text);
+}
+
+.headerMeta {
+  flex-shrink: 0;
+}
+
+.masaBadge {
+  display: inline-block;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.masaWarn {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #a65105;
 }
 
 .main {
@@ -43,9 +69,64 @@
 }
 
 .subtitle {
-  margin: 0 0 1.75rem;
+  margin: 0 0 1rem;
   font-size: 0.95rem;
   color: var(--muted);
+}
+
+.masaRow {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.masaLabel {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.masaSelect {
+  font: inherit;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.qrHint {
+  margin: 0 0 1rem;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.code {
+  font-size: 0.82rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.feedbackOk,
+.feedbackErr {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+}
+
+.feedbackOk {
+  background: color-mix(in srgb, #2f9e44 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, #2f9e44 35%, var(--border));
+  color: var(--text);
+}
+
+.feedbackErr {
+  background: color-mix(in srgb, #e03131 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, #e03131 28%, var(--border));
+  color: var(--text);
 }
 
 .categories {
@@ -72,15 +153,25 @@
 
 .item {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.65rem;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   font-size: 0.98rem;
   color: var(--text);
+}
+
+.itemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .itemName {
@@ -95,6 +186,49 @@
   color: var(--accent);
 }
 
+.itemActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.qtyBtn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.qtyBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--border) 40%, var(--surface));
+}
+
+.qtyBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.qtyBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.qtyVal {
+  min-width: 1.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
 .footer {
   margin-top: auto;
   padding: 1rem 1.25rem;
@@ -103,4 +237,48 @@
   color: var(--muted);
   border-top: 1px solid var(--border);
   background: var(--surface);
+}
+
+.cartBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 28px rgba(28, 29, 36, 0.06);
+}
+
+.cartInner {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cartSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cartLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.cartTotal {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }

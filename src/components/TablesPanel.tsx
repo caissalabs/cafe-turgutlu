@@ -1,18 +1,92 @@
+import { useMemo } from 'react'
 import { CAFE_TABLES } from '@/constants/tables'
+import { formatPriceTry } from '@/constants/menu'
+import type { CafeOrder } from '@/types/order'
 import styles from './TablesPanel.module.css'
 
-export function TablesPanel() {
+type TablesPanelProps = {
+  orders: CafeOrder[]
+  loading: boolean
+}
+
+function formatWhen(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat('tr-TR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(iso))
+  } catch {
+    return iso
+  }
+}
+
+export function TablesPanel({ orders, loading }: TablesPanelProps) {
+  const byTable = useMemo(() => {
+    const map = new Map<number, CafeOrder[]>()
+    for (const t of CAFE_TABLES) map.set(t.id, [])
+    for (const o of orders) {
+      const list = map.get(o.tableNumber)
+      if (list) list.push(o)
+      else map.set(o.tableNumber, [o])
+    }
+    for (const [, list] of map) {
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    }
+    return map
+  }, [orders])
+
   return (
     <div className={styles.wrap}>
-      <h2 className={styles.heading}>Masalar</h2>
-      <p className={styles.hint}>Toplam {CAFE_TABLES.length} masa</p>
-      <ul className={styles.grid} aria-label="Cafe masaları">
-        {CAFE_TABLES.map((table) => (
-          <li key={table.id} className={styles.card}>
-            <span className={styles.cardTitle}>{table.name}</span>
-            <span className={styles.cardMeta}>Masa {table.id}</span>
-          </li>
-        ))}
+      <h2 className={styles.heading}>Masalar ve siparişler</h2>
+      <p className={styles.hint}>
+        QR ile gelen müşteriler <code className={styles.code}>masa</code> parametresiyle kaydedilir; burada masa
+        bazında görürsünüz.
+      </p>
+      {loading ? <p className={styles.loading}>Yükleniyor…</p> : null}
+      <ul className={styles.grid} aria-label="Masalar">
+        {CAFE_TABLES.map((table) => {
+          const tableOrders = byTable.get(table.id) ?? []
+          const sum = tableOrders.reduce((acc, o) => acc + o.totalTry, 0)
+          return (
+            <li key={table.id} className={styles.card}>
+              <div className={styles.cardHead}>
+                <span className={styles.cardTitle}>{table.name}</span>
+                <span className={styles.cardMeta}>Masa {table.id}</span>
+              </div>
+              <div className={styles.cardTotals}>
+                <span className={styles.orderCount}>{tableOrders.length} sipariş</span>
+                <span className={styles.sum}>{formatPriceTry(sum)}</span>
+              </div>
+              {tableOrders.length === 0 ? (
+                <p className={styles.empty}>Henüz sipariş yok</p>
+              ) : (
+                <ul className={styles.orderList}>
+                  {tableOrders.map((o) => (
+                    <li key={o.id} className={styles.order}>
+                      <div className={styles.orderTop}>
+                        <time className={styles.time} dateTime={o.createdAt}>
+                          {formatWhen(o.createdAt)}
+                        </time>
+                        <span className={styles.orderSum}>{formatPriceTry(o.totalTry)}</span>
+                      </div>
+                      <ul className={styles.lines}>
+                        {o.lines.map((line) => (
+                          <li key={`${o.id}-${line.key}`} className={styles.line}>
+                            <span>
+                              {line.name}{' '}
+                              <span className={styles.dim}>×{line.qty}</span>
+                            </span>
+                            <span>{formatPriceTry(line.price * line.qty)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
