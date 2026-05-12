@@ -3,6 +3,141 @@
   flex-shrink: 0;
 }
 
+.modalRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.modalBackdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(22, 23, 28, 0.45);
+  cursor: pointer;
+}
+
+.modalBackdrop:disabled {
+  cursor: wait;
+}
+
+.modalPanel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+  padding: 1.35rem 1.25rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 48px rgba(28, 29, 36, 0.18);
+}
+
+.modalTitle {
+  margin: 0 0 0.65rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modalText {
+  margin: 0 0 1.25rem;
+  font-size: 0.93rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btnGhost {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.btnGhost:hover {
+  background: color-mix(in srgb, var(--border) 38%, var(--surface));
+}
+
+.btnDanger {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #c92a2a;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btnDanger:hover {
+  background: #a61e1e;
+}
+
+.btnPrimary {
+  padding: 0.5rem 1.15rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btnPrimary:hover {
+  background: var(--accent-hover);
+}
+
+.loadingBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-top-color: var(--accent);
+  animation: tableCardSpin 0.75s linear infinite;
+}
+
+@keyframes tableCardSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
 .kebab {
   display: flex;
   flex-direction: row;

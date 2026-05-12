@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { MENU_CATEGORIES, formatPriceTry } from '@/constants/menu'
 import { TABLE_COUNT } from '@/constants/tables'
@@ -110,12 +111,17 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
           </div>
         </header>
       ) : (
-        <div className={styles.staffMasaRow}>
-          {hasMasa ? (
-            <span className={styles.masaBadge}>Masa {masa}</span>
-          ) : (
-            <span className={styles.masaWarn}>Masa seçilmedi</span>
-          )}
+        <div className={styles.staffToolbar}>
+          <Link to="/home" className={styles.backLink}>
+            ← Masalara dön
+          </Link>
+          <div className={styles.staffToolbarMeta}>
+            {hasMasa ? (
+              <span className={styles.masaBadge}>Masa {masa}</span>
+            ) : (
+              <span className={styles.masaWarn}>Masa seçilmedi</span>
+            )}
+          </div>
         </div>
       )}
 
