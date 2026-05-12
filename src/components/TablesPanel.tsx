@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { TableCardMenu } from '@/components/TableCardMenu'
 import { CAFE_TABLES } from '@/constants/tables'
 import { formatPriceTry } from '@/constants/menu'
 import type { CafeOrder } from '@/types/order'
@@ -7,6 +8,7 @@ import styles from './TablesPanel.module.css'
 type TablesPanelProps = {
   orders: CafeOrder[]
   loading: boolean
+  onOrdersRefresh: () => void | Promise<void>
 }
 
 function formatWhen(iso: string): string {
@@ -20,7 +22,7 @@ function formatWhen(iso: string): string {
   }
 }
 
-export function TablesPanel({ orders, loading }: TablesPanelProps) {
+export function TablesPanel({ orders, loading, onOrdersRefresh }: TablesPanelProps) {
   const byTable = useMemo(() => {
     const map = new Map<number, CafeOrder[]>()
     for (const t of CAFE_TABLES) map.set(t.id, [])
@@ -49,9 +51,16 @@ export function TablesPanel({ orders, loading }: TablesPanelProps) {
           const sum = tableOrders.reduce((acc, o) => acc + o.totalTry, 0)
           return (
             <li key={table.id} className={styles.card}>
-              <div className={styles.cardHead}>
-                <span className={styles.cardTitle}>{table.name}</span>
-                <span className={styles.cardMeta}>Masa {table.id}</span>
+              <div className={styles.cardTop}>
+                <div className={styles.cardHead}>
+                  <span className={styles.cardTitle}>{table.name}</span>
+                  <span className={styles.cardMeta}>Masa {table.id}</span>
+                </div>
+                <TableCardMenu
+                  tableNumber={table.id}
+                  orderCount={tableOrders.length}
+                  onResetComplete={onOrdersRefresh}
+                />
               </div>
               <div className={styles.cardTotals}>
                 <span className={styles.orderCount}>{tableOrders.length} sipariş</span>

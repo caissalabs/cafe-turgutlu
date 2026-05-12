@@ -5,7 +5,7 @@ import styles from './AdminHomePage.module.css'
 
 export function AdminHomePage() {
   useDocumentTitle('Cafe Turgutlu — Yönetim paneli')
-  const { orders, loading, error, storageKind } = useOrders()
+  const { orders, loading, error, storageKind, refreshOrders } = useOrders()
 
   return (
     <section className={styles.stack}>
@@ -28,7 +28,7 @@ export function AdminHomePage() {
           {error}
         </p>
       ) : null}
-      <TablesPanel orders={orders} loading={loading} />
+      <TablesPanel orders={orders} loading={loading} onOrdersRefresh={refreshOrders} />
     </section>
   )
 }

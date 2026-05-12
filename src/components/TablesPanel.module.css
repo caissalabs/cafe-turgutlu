@@ -56,12 +56,22 @@
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   min-height: 6rem;
+  position: relative;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.35rem;
 }
 
 .cardHead {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .cardTitle {

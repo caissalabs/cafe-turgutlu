@@ -1,0 +1,88 @@
+.wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.kebab {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.kebab:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--border) 50%, transparent);
+  color: var(--text);
+}
+
+.kebab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kebab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.35rem 0;
+  list-style: none;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.menuItem:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--border) 42%, var(--surface));
+}
+
+.menuItem:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.menuItem:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}

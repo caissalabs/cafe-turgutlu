@@ -1,7 +1,7 @@
 -- Cafe Turgutlu — Supabase SQL Editor'de bir kez çalıştırın.
 -- Projeyi oluşturduktan sonra: SQL Editor → New query → yapıştır → Run.
 --
--- Güvenlik: anon için INSERT+SELECT küçük işletme MVP içindir; kötüye kullanıma karşı
+-- Güvenlik: anon için INSERT+SELECT+DELETE küçük işletme MVP içindir (masa sıfırlama); kötüye kullanıma karşı
 -- ileride Edge Function veya service_role ile sıkılaştırın.
 
 create table if not exists public.cafe_orders (
@@ -14,8 +14,8 @@ create table if not exists public.cafe_orders (
 
 alter table public.cafe_orders enable row level security;
 
-grant select, insert on public.cafe_orders to anon;
-grant select, insert on public.cafe_orders to authenticated;
+grant select, insert, delete on public.cafe_orders to anon;
+grant select, insert, delete on public.cafe_orders to authenticated;
 grant all on public.cafe_orders to service_role;
 
 create policy "cafe_orders_anon_insert"
@@ -25,6 +25,11 @@ create policy "cafe_orders_anon_insert"
 
 create policy "cafe_orders_anon_select"
   on public.cafe_orders for select
+  to anon
+  using (true);
+
+create policy "cafe_orders_anon_delete"
+  on public.cafe_orders for delete
   to anon
   using (true);
 

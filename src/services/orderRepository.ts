@@ -53,6 +53,20 @@ export async function fetchAllOrders(): Promise<CafeOrder[]> {
   return readLocalOrders()
 }
 
+/** Masanın tüm sipariş kayıtlarını siler (Supabase veya yerel depo). */
+export async function deleteOrdersForTable(tableNumber: number): Promise<void> {
+  if (supabase) {
+    const { error } = await supabase
+      .from('cafe_orders')
+      .delete()
+      .eq('table_number', tableNumber)
+    if (error) throw error
+    return
+  }
+  const next = readLocalOrders().filter((o) => o.tableNumber !== tableNumber)
+  writeLocalOrders(next)
+}
+
 export async function submitOrder(input: {
   tableNumber: number
   lines: OrderLine[]
