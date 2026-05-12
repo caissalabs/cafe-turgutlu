@@ -1,14 +1,18 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { OrderPreparedModal } from '@/components/OrderPreparedModal'
 import { TableCardMenu } from '@/components/TableCardMenu'
 import { CAFE_TABLES } from '@/constants/tables'
 import { formatPriceTry } from '@/constants/menu'
 import type { CafeOrder } from '@/types/order'
+import { cn } from '@/utils/cn'
 import styles from './TablesPanel.module.css'
 
 type TablesPanelProps = {
   orders: CafeOrder[]
   loading: boolean
   onOrdersRefresh: () => void | Promise<void>
+  attentionTableIds: ReadonlySet<number>
+  onClearTableAttention: (tableId: number) => void
 }
 
 function formatWhen(iso: string): string {
@@ -22,7 +26,15 @@ function formatWhen(iso: string): string {
   }
 }
 
-export function TablesPanel({ orders, loading, onOrdersRefresh }: TablesPanelProps) {
+export function TablesPanel({
+  orders,
+  loading,
+  onOrdersRefresh,
+  attentionTableIds,
+  onClearTableAttention,
+}: TablesPanelProps) {
+  const [preparedTableId, setPreparedTableId] = useState<number | null>(null)
+
   const byTable = useMemo(() => {
     const map = new Map<number, CafeOrder[]>()
     for (const t of CAFE_TABLES) map.set(t.id, [])
@@ -39,6 +51,16 @@ export function TablesPanel({ orders, loading, onOrdersRefresh }: TablesPanelPro
 
   return (
     <div className={styles.wrap}>
+      <OrderPreparedModal
+        tableId={preparedTableId}
+        onCancel={() => setPreparedTableId(null)}
+        onConfirm={() => {
+          if (preparedTableId != null) {
+            onClearTableAttention(preparedTableId)
+          }
+          setPreparedTableId(null)
+        }}
+      />
       <h2 className={styles.heading}>Masalar ve siparişler</h2>
       <p className={styles.hint}>
         QR ile gelen müşteriler <code className={styles.code}>masa</code> parametresiyle kaydedilir; burada masa
@@ -49,8 +71,12 @@ export function TablesPanel({ orders, loading, onOrdersRefresh }: TablesPanelPro
         {CAFE_TABLES.map((table) => {
           const tableOrders = byTable.get(table.id) ?? []
           const sum = tableOrders.reduce((acc, o) => acc + o.totalTry, 0)
+          const needsAttention = attentionTableIds.has(table.id)
           return (
-            <li key={table.id} className={styles.card}>
+            <li
+              key={table.id}
+              className={cn(styles.card, needsAttention && styles.cardAttention)}
+            >
               <div className={styles.cardTop}>
                 <div className={styles.cardHead}>
                   <span className={styles.cardTitle}>{table.name}</span>
@@ -66,6 +92,15 @@ export function TablesPanel({ orders, loading, onOrdersRefresh }: TablesPanelPro
                 <span className={styles.orderCount}>{tableOrders.length} sipariş</span>
                 <span className={styles.sum}>{formatPriceTry(sum)}</span>
               </div>
+              {needsAttention ? (
+                <button
+                  type="button"
+                  className={styles.preparedBtn}
+                  onClick={() => setPreparedTableId(table.id)}
+                >
+                  Sipariş hazırlandı
+                </button>
+              ) : null}
               {tableOrders.length === 0 ? (
                 <p className={styles.empty}>Henüz sipariş yok</p>
               ) : (

@@ -1,0 +1,83 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(22, 23, 28, 0.45);
+  cursor: pointer;
+}
+
+.panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+  padding: 1.35rem 1.25rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.title {
+  margin: 0 0 0.65rem;
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.text {
+  margin: 0 0 1.2rem;
+  font-size: 0.93rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btnGhost {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.btnGhost:hover {
+  background: color-mix(in srgb, var(--border) 38%, var(--surface));
+}
+
+.btnPrimary {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btnPrimary:hover {
+  background: var(--accent-hover);
+}
