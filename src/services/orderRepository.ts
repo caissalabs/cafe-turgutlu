@@ -1,6 +1,17 @@
-import type { CafeOrder, OrderLine } from '@/types/order'
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient'
+import type { CafeOrder, CafeOrderRow, OrderLine } from '@/types/order'
 
 const LOCAL_KEY = 'cafe-turgutlu-orders-v1'
+
+function mapRow(row: CafeOrderRow): CafeOrder {
+  return {
+    id: row.id,
+    tableNumber: row.table_number,
+    lines: Array.isArray(row.lines) ? row.lines : [],
+    totalTry: Number(row.total_try),
+    createdAt: row.created_at,
+  }
+}
 
 function readLocalOrders(): CafeOrder[] {
   try {
@@ -29,7 +40,16 @@ function writeLocalOrders(orders: CafeOrder[]) {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(orders))
 }
 
-export function fetchAllOrders(): CafeOrder[] {
+export async function fetchAllOrders(): Promise<CafeOrder[]> {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('cafe_orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return ((data ?? []) as CafeOrderRow[]).map(mapRow)
+  }
   return readLocalOrders()
 }
 
@@ -38,6 +58,16 @@ export async function submitOrder(input: {
   lines: OrderLine[]
   totalTry: number
 }): Promise<void> {
+  if (supabase) {
+    const { error } = await supabase.from('cafe_orders').insert({
+      table_number: input.tableNumber,
+      lines: input.lines,
+      total_try: input.totalTry,
+    })
+    if (error) throw error
+    return
+  }
+
   const order: CafeOrder = {
     id: crypto.randomUUID(),
     tableNumber: input.tableNumber,
@@ -48,18 +78,37 @@ export async function submitOrder(input: {
   writeLocalOrders([order, ...readLocalOrders()])
 }
 
-/**
- * Sipariş listesini dinler: başka sekmede yapılan güncellemeler storage olayıyla,
- * aynı sekmede küçük bir aralıkla yenilenir.
- */
+export function getOrderStorageKind(): 'supabase' | 'local' {
+  return isSupabaseConfigured() ? 'supabase' : 'local'
+}
+
 export function subscribeOrders(onOrders: (orders: CafeOrder[]) => void): () => void {
   let cancelled = false
 
   const refresh = () => {
-    if (!cancelled) onOrders(fetchAllOrders())
+    void fetchAllOrders().then((list) => {
+      if (!cancelled) onOrders(list)
+    })
   }
 
   refresh()
+
+  if (supabase) {
+    const client = supabase
+    const channel = client
+      .channel('cafe_orders_live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cafe_orders' },
+        () => refresh(),
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      void client.removeChannel(channel)
+    }
+  }
 
   const onStorage = (ev: StorageEvent) => {
     if (ev.key === LOCAL_KEY) refresh()

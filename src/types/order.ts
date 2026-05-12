@@ -13,3 +13,12 @@ export type CafeOrder = {
   totalTry: number
   createdAt: string
 }
+
+/** Supabase satırı (PostgREST yanıtı) */
+export type CafeOrderRow = {
+  id: string
+  table_number: number
+  lines: OrderLine[]
+  total_try: number
+  created_at: string
+}
