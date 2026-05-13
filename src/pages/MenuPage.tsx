@@ -6,18 +6,29 @@ import { CAFE_TABLES, type CafeTable, canonicalTableName, tableDisplayLabel } fr
 import { clearMasaSession, useMasaNumber } from '@/hooks/useMasaNumber'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { fetchTableNames } from '@/services/tableRepository'
-import { submitOrder } from '@/services/orderRepository'
-import type { OrderLine } from '@/types/order'
+import { fetchOrdersByTable, submitOrder } from '@/services/orderRepository'
+import type { CafeOrder, OrderLine } from '@/types/order'
 import { cn } from '@/utils/cn'
 import styles from './MenuPage.module.css'
 
 export type MenuPageProps = {
-  /** `staff`: yalnızca giriş yapılmış `/home/menu` rotası (Layout içinde). */
   variant?: 'public' | 'staff'
 }
 
+type Step = 'loading' | 'existing-check' | 'menu' | 'cart'
+
 function lineKey(categoryId: string, itemName: string) {
   return `${categoryId}::${itemName}`
+}
+
+function formatWhen(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(
+      new Date(iso),
+    )
+  } catch {
+    return iso
+  }
 }
 
 export function MenuPage({ variant = 'public' }: MenuPageProps) {
@@ -28,93 +39,86 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   useDocumentTitle(staff ? 'Cafe Turgutlu — Menü (yönetim)' : 'Cafe Turgutlu — Menü')
 
-  const [cart, setCart] = useState<Record<string, OrderLine>>({})
-  const [submitting, setSubmitting] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  /* ── Personel: masa listesi ── */
   const [staffTables, setStaffTables] = useState<CafeTable[]>(() => [...CAFE_TABLES])
-
   useEffect(() => {
     if (!staff) return
     void fetchTableNames().then((rows) => {
       if (rows.length > 0) {
-        setStaffTables(
-          rows.map((r) => ({
-            id: r.id,
-            name: canonicalTableName(r.id),
-            nickname: r.nickname,
-          })),
-        )
+        setStaffTables(rows.map((r) => ({ id: r.id, name: canonicalTableName(r.id), nickname: r.nickname })))
       }
     })
   }, [staff])
 
+  /* ── Adım ── */
+  const [step, setStep] = useState<Step>(staff ? 'menu' : 'loading')
+  const [existingOrders, setExistingOrders] = useState<CafeOrder[]>([])
+
+  /* Müşteri: masa belli olunca mevcut sipariş kontrolü */
+  useEffect(() => {
+    if (staff || !hasMasa || masa == null) return
+    setStep('loading')
+    fetchOrdersByTable(masa)
+      .then((orders) => {
+        if (orders.length > 0) {
+          setExistingOrders(orders)
+          setStep('existing-check')
+        } else {
+          setStep('menu')
+        }
+      })
+      .catch(() => setStep('menu'))
+  }, [staff, hasMasa, masa])
+
+  /* ── Sepet ── */
+  const [cart, setCart] = useState<Record<string, OrderLine>>({})
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
   const cartLines = useMemo(() => Object.values(cart).filter((l) => l.qty > 0), [cart])
-  const cartTotal = useMemo(
-    () => cartLines.reduce((sum, l) => sum + l.price * l.qty, 0),
-    [cartLines],
-  )
+  const cartTotal = useMemo(() => cartLines.reduce((s, l) => s + l.price * l.qty, 0), [cartLines])
+  const cartItemCount = useMemo(() => cartLines.reduce((s, l) => s + l.qty, 0), [cartLines])
 
   const addOne = useCallback((categoryId: string, name: string, price: number) => {
     const key = lineKey(categoryId, name)
-    setFeedback(null)
     setCart((prev) => {
       const cur = prev[key]
-      const qty = (cur?.qty ?? 0) + 1
-      return { ...prev, [key]: { key, name, price, qty } }
+      return { ...prev, [key]: { key, name, price, qty: (cur?.qty ?? 0) + 1 } }
     })
   }, [])
 
   const removeOne = useCallback((key: string) => {
-    setFeedback(null)
     setCart((prev) => {
       const cur = prev[key]
       if (!cur) return prev
       const qty = cur.qty - 1
-      if (qty <= 0) {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      }
+      if (qty <= 0) { const next = { ...prev }; delete next[key]; return next }
       return { ...prev, [key]: { ...cur, qty } }
     })
   }, [])
 
   const handleSubmit = async () => {
-    if (!hasMasa || masa == null) {
-      return
-    }
-    if (cartLines.length === 0) {
-      setFeedback({ type: 'err', text: 'Sepetiniz boş.' })
-      return
-    }
+    if (!hasMasa || masa == null || cartLines.length === 0) return
     setSubmitting(true)
-    setFeedback(null)
+    setSubmitError(null)
     try {
-      await submitOrder({
-        tableNumber: masa,
-        lines: cartLines,
-        totalTry: cartTotal,
-      })
+      await submitOrder({ tableNumber: masa, lines: cartLines, totalTry: cartTotal })
       setCart({})
       if (!staff) {
         clearMasaSession()
         navigate('/menu/tamamlandi', { replace: true })
       } else {
-        setFeedback({
-          type: 'ok',
-          text: `Sipariş gönderildi (Masa ${masa}).`,
-        })
+        setStep('menu')
+        setCart({})
       }
     } catch (e) {
-      setFeedback({
-        type: 'err',
-        text: e instanceof Error ? e.message : 'Sipariş gönderilemedi.',
-      })
+      setSubmitError(e instanceof Error ? e.message : 'Sipariş gönderilemedi.')
     } finally {
       setSubmitting(false)
     }
   }
 
+  /* ── QR gate (masa yok) ── */
   if (!staff && !hasMasa) {
     return (
       <div className={styles.page}>
@@ -136,22 +140,182 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
     )
   }
 
+  /* ── Yükleniyor ── */
+  if (!staff && step === 'loading') {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerInner}><span className={styles.brand}>Cafe Turgutlu</span></div>
+        </header>
+        <main className={styles.main}>
+          <p className={styles.loadingText}>Yükleniyor…</p>
+        </main>
+      </div>
+    )
+  }
+
+  /* ── Mevcut sipariş kontrolü ── */
+  if (!staff && step === 'existing-check') {
+    const total = existingOrders.reduce((s, o) => s + o.totalTry, 0)
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerInner}>
+            <span className={styles.brand}>Cafe Turgutlu</span>
+            <span className={styles.masaBadge}>Masa {masa}</span>
+          </div>
+        </header>
+        <main className={styles.main}>
+          <div className={styles.existingWrap}>
+            <h1 className={styles.existingTitle}>Bu masada açık sipariş var</h1>
+            <p className={styles.existingSubtitle}>Bu siparişler size mi ait?</p>
+
+            <div className={styles.existingOrders}>
+              {existingOrders.map((o) => (
+                <div key={o.id} className={styles.existingOrder}>
+                  <div className={styles.existingOrderTop}>
+                    <time className={styles.existingTime}>{formatWhen(o.createdAt)}</time>
+                    <span className={styles.existingSum}>{formatPriceTry(o.totalTry)}</span>
+                  </div>
+                  <ul className={styles.existingLines}>
+                    {o.lines.map((l) => (
+                      <li key={l.key} className={styles.existingLine}>
+                        <span>{l.name} <span className={styles.existingQty}>×{l.qty}</span></span>
+                        <span>{formatPriceTry(l.price * l.qty)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <div className={styles.existingTotal}>
+                <span>Toplam</span>
+                <span>{formatPriceTry(total)}</span>
+              </div>
+            </div>
+
+            <div className={styles.existingActions}>
+              <button
+                type="button"
+                className={styles.existingYes}
+                onClick={() => setStep('menu')}
+              >
+                Evet, benim — menüye geç
+              </button>
+              <button
+                type="button"
+                className={styles.existingNo}
+                onClick={() => setStep('menu')}
+              >
+                Hayır, yeni sipariş ver
+              </button>
+            </div>
+          </div>
+        </main>
+        <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+      </div>
+    )
+  }
+
+  /* ── Sepet adımı ── */
+  if (step === 'cart') {
+    return (
+      <div className={cn(styles.page, staff && styles.staff)}>
+        {!staff ? (
+          <header className={styles.header}>
+            <div className={styles.headerInner}>
+              <button type="button" className={styles.backBtn} onClick={() => setStep('menu')}>
+                ← Menüye dön
+              </button>
+              <span className={styles.masaBadge}>Masa {masa}</span>
+            </div>
+          </header>
+        ) : (
+          <div className={styles.staffToolbar}>
+            <button type="button" className={styles.backLink} onClick={() => setStep('menu')}>
+              ← Menüye dön
+            </button>
+          </div>
+        )}
+
+        <main className={styles.main}>
+          <h1 className={styles.title}>Sepetiniz</h1>
+
+          {cartLines.length === 0 ? (
+            <p className={styles.cartEmpty}>Sepetiniz boş.</p>
+          ) : (
+            <ul className={styles.cartList}>
+              {cartLines.map((line) => (
+                <li key={line.key} className={styles.cartItem}>
+                  <div className={styles.cartItemMain}>
+                    <span className={styles.cartItemName}>{line.name}</span>
+                    <span className={styles.cartItemPrice}>{formatPriceTry(line.price * line.qty)}</span>
+                  </div>
+                  <div className={styles.itemActions}>
+                    <button
+                      type="button"
+                      className={styles.qtyBtn}
+                      onClick={() => removeOne(line.key)}
+                    >
+                      −
+                    </button>
+                    <span className={styles.qtyVal}>{line.qty}</span>
+                    <button
+                      type="button"
+                      className={styles.qtyBtn}
+                      onClick={() => addOne(line.key.split('::')[0]!, line.name, line.price)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className={styles.cartSummaryCard}>
+            <span className={styles.cartSummaryLabel}>Toplam</span>
+            <span className={styles.cartSummaryTotal}>{formatPriceTry(cartTotal)}</span>
+          </div>
+
+          {submitError && (
+            <p className={styles.submitError} role="alert">{submitError}</p>
+          )}
+        </main>
+
+        {!staff ? <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer> : null}
+
+        <div className={styles.cartBar} role="region" aria-label="Sipariş ver">
+          <div className={styles.cartInner}>
+            <div className={styles.cartSummary}>
+              <span className={styles.cartLabel}>{cartItemCount} ürün</span>
+              <span className={styles.cartTotal}>{formatPriceTry(cartTotal)}</span>
+            </div>
+            <Button
+              type="button"
+              disabled={submitting || cartLines.length === 0 || !hasMasa}
+              onClick={() => void handleSubmit()}
+            >
+              {submitting ? 'Gönderiliyor…' : 'Sipariş ver'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* ── Menü adımı ── */
   return (
     <div className={cn(styles.page, staff && styles.staff)}>
       {!staff ? (
         <header className={styles.header}>
           <div className={styles.headerInner}>
             <span className={styles.brand}>Cafe Turgutlu</span>
-            <div className={styles.headerMeta}>
-              <span className={styles.masaBadge}>Masa {masa}</span>
-            </div>
+            <span className={styles.masaBadge}>Masa {masa}</span>
           </div>
         </header>
       ) : (
         <div className={styles.staffToolbar}>
-          <Link to="/home" className={styles.backLink}>
-            ← Masalara dön
-          </Link>
+          <Link to="/home" className={styles.backLink}>← Masalara dön</Link>
           <div className={styles.staffToolbarMeta}>
             {hasMasa ? (
               <span className={styles.masaBadge}>Masa {masa}</span>
@@ -183,21 +347,9 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
             >
               <option value="">Seçin…</option>
               {staffTables.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {tableDisplayLabel(t)}
-                </option>
+                <option key={t.id} value={t.id}>{tableDisplayLabel(t)}</option>
               ))}
             </select>
-          </div>
-        ) : null}
-
-        {feedback ? (
-          <div
-            className={feedback.type === 'ok' ? styles.feedbackOk : styles.feedbackErr}
-            role={feedback.type === 'err' ? 'alert' : 'status'}
-            aria-live="polite"
-          >
-            {feedback.text}
           </div>
         ) : null}
 
@@ -210,18 +362,12 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
               <ul className={styles.list}>
                 {category.items.map((item) => {
                   const key = lineKey(category.id, item.name)
-                  const row = cart[key]
-                  const qty = row?.qty ?? 0
+                  const qty = cart[key]?.qty ?? 0
                   return (
-                    <li
-                      key={`${category.id}-${item.name}`}
-                      className={styles.item}
-                    >
+                    <li key={`${category.id}-${item.name}`} className={styles.item}>
                       <div className={styles.itemMain}>
                         <span className={styles.itemName}>{item.name}</span>
-                        <span className={styles.itemPrice} aria-label="Fiyat">
-                          {formatPriceTry(item.price)}
-                        </span>
+                        <span className={styles.itemPrice}>{formatPriceTry(item.price)}</span>
                       </div>
                       <div className={styles.itemActions}>
                         <button
@@ -233,9 +379,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
                         >
                           −
                         </button>
-                        <span className={styles.qtyVal} aria-live="polite">
-                          {qty}
-                        </span>
+                        <span className={styles.qtyVal} aria-live="polite">{qty}</span>
                         <button
                           type="button"
                           className={styles.qtyBtn}
@@ -256,18 +400,21 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
       {!staff ? <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer> : null}
 
+      {/* Alt bar: boşsa "Sepet boş", doluysa "Sepete git (N ürün)" */}
       <div className={styles.cartBar} role="region" aria-label="Sepet">
         <div className={styles.cartInner}>
           <div className={styles.cartSummary}>
-            <span className={styles.cartLabel}>Sepet</span>
-            <span className={styles.cartTotal}>{formatPriceTry(cartTotal)}</span>
+            <span className={styles.cartLabel}>
+              {cartItemCount > 0 ? `${cartItemCount} ürün seçildi` : 'Sepet boş'}
+            </span>
+            {cartTotal > 0 && <span className={styles.cartTotal}>{formatPriceTry(cartTotal)}</span>}
           </div>
           <Button
             type="button"
-            disabled={submitting || cartLines.length === 0 || !hasMasa}
-            onClick={() => void handleSubmit()}
+            disabled={cartLines.length === 0 || !hasMasa}
+            onClick={() => setStep('cart')}
           >
-            {submitting ? 'Gönderiliyor…' : 'Sipariş ver'}
+            Sepete git
           </Button>
         </div>
       </div>

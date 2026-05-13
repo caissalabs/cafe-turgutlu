@@ -53,6 +53,20 @@ export async function fetchAllOrders(): Promise<CafeOrder[]> {
   return readLocalOrders()
 }
 
+/** Belirli bir masanın siparişlerini getirir. */
+export async function fetchOrdersByTable(tableNumber: number): Promise<CafeOrder[]> {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('cafe_orders')
+      .select('*')
+      .eq('table_number', tableNumber)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return ((data ?? []) as CafeOrderRow[]).map(mapRow)
+  }
+  return readLocalOrders().filter((o) => o.tableNumber === tableNumber)
+}
+
 /** Tüm siparişleri bir masadan diğerine taşır (aynı kayıtlar, yalnızca masa numarası değişir). */
 export async function transferOrdersBetweenTables(
   fromTableNumber: number,

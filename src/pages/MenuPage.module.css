@@ -330,3 +330,245 @@
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
+
+/* ── Loading ── */
+.loadingText {
+  margin-top: 3rem;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+/* ── Mevcut sipariş kontrolü ── */
+.existingWrap {
+  padding: 0.5rem 0 2rem;
+}
+
+.existingTitle {
+  margin: 0 0 0.3rem;
+  font-size: clamp(1.25rem, 4vw, 1.6rem);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.existingSubtitle {
+  margin: 0 0 1.5rem;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.existingOrders {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.existingOrder {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+}
+
+.existingOrderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.existingTime {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.existingSum {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.existingLines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.existingLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.existingQty {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.existingTotal {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.existingActions {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.existingYes {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.existingYes:hover {
+  background: var(--accent-hover, #1d7d45);
+}
+
+.existingNo {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.existingNo:hover {
+  background: color-mix(in srgb, var(--border) 40%, var(--surface));
+}
+
+/* ── Geri butonu ── */
+.backBtn {
+  background: none;
+  border: none;
+  padding: 0.35rem 0;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.backBtn:hover {
+  color: var(--accent-hover, #1d7d45);
+  text-decoration: underline;
+}
+
+/* ── Sepet adımı ── */
+.cartEmpty {
+  margin: 1.5rem 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.cartList {
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cartItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.cartItemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cartItemName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+
+.cartItemPrice {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.cartSummaryCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  margin-bottom: 0.75rem;
+}
+
+.cartSummaryLabel {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+}
+
+.cartSummaryTotal {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.submitError {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+  background: color-mix(in srgb, #e03131 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, #e03131 28%, var(--border));
+  color: var(--text);
+}
