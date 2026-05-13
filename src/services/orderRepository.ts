@@ -53,6 +53,26 @@ export async function fetchAllOrders(): Promise<CafeOrder[]> {
   return readLocalOrders()
 }
 
+/** Tüm siparişleri bir masadan diğerine taşır (aynı kayıtlar, yalnızca masa numarası değişir). */
+export async function transferOrdersBetweenTables(
+  fromTableNumber: number,
+  toTableNumber: number,
+): Promise<void> {
+  if (fromTableNumber === toTableNumber) return
+  if (supabase) {
+    const { error } = await supabase
+      .from('cafe_orders')
+      .update({ table_number: toTableNumber })
+      .eq('table_number', fromTableNumber)
+    if (error) throw error
+    return
+  }
+  const orders = readLocalOrders().map((o) =>
+    o.tableNumber === fromTableNumber ? { ...o, tableNumber: toTableNumber } : o,
+  )
+  writeLocalOrders(orders)
+}
+
 /** Masanın tüm sipariş kayıtlarını siler (Supabase veya yerel depo). */
 export async function deleteOrdersForTable(tableNumber: number): Promise<void> {
   if (supabase) {

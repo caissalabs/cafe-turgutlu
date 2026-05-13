@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react'
 import { OrderPreparedModal } from '@/components/OrderPreparedModal'
 import { TableCardMenu } from '@/components/TableCardMenu'
-import { CAFE_TABLES } from '@/constants/tables'
+import { TableDetailModal } from '@/components/TableDetailModal'
+import { TableMasaIcon } from '@/components/TableMasaIcon'
+import { MAX_TABLE_ID } from '@/constants/tables'
 import { formatPriceTry } from '@/constants/menu'
+import { useCafeTables } from '@/hooks/useCafeTables'
+import { transferOrdersBetweenTables } from '@/services/orderRepository'
 import type { CafeOrder } from '@/types/order'
 import { cn } from '@/utils/cn'
 import styles from './TablesPanel.module.css'
@@ -15,17 +19,6 @@ type TablesPanelProps = {
   onClearTableAttention: (tableId: number) => void
 }
 
-function formatWhen(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat('tr-TR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
 export function TablesPanel({
   orders,
   loading,
@@ -34,10 +27,13 @@ export function TablesPanel({
   onClearTableAttention,
 }: TablesPanelProps) {
   const [preparedTableId, setPreparedTableId] = useState<number | null>(null)
+  const [detailTableId, setDetailTableId] = useState<number | null>(null)
+  const [addError, setAddError] = useState<string | null>(null)
+  const { tables, names, rename, addTable } = useCafeTables()
 
   const byTable = useMemo(() => {
     const map = new Map<number, CafeOrder[]>()
-    for (const t of CAFE_TABLES) map.set(t.id, [])
+    for (const t of tables) map.set(t.id, [])
     for (const o of orders) {
       const list = map.get(o.tableNumber)
       if (list) list.push(o)
@@ -47,7 +43,15 @@ export function TablesPanel({
       list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }
     return map
-  }, [orders])
+  }, [orders, tables])
+
+  const detailOrders = detailTableId != null ? (byTable.get(detailTableId) ?? []) : []
+  const detailTableName = detailTableId != null ? (names.get(detailTableId) ?? `Masa ${detailTableId}`) : ''
+  const detailSum = detailOrders.reduce((acc, o) => acc + o.totalTry, 0)
+  const detailNeedsAttention = detailTableId != null && attentionTableIds.has(detailTableId)
+
+  const lastTableId = tables.length ? tables[tables.length - 1]!.id : 0
+  const canAddTable = lastTableId < MAX_TABLE_ID
 
   return (
     <div className={styles.wrap}>
@@ -55,82 +59,107 @@ export function TablesPanel({
         tableId={preparedTableId}
         onCancel={() => setPreparedTableId(null)}
         onConfirm={() => {
-          if (preparedTableId != null) {
-            onClearTableAttention(preparedTableId)
-          }
+          if (preparedTableId != null) onClearTableAttention(preparedTableId)
           setPreparedTableId(null)
         }}
       />
+
+      {detailTableId != null && (
+        <TableDetailModal
+          tableName={detailTableName}
+          orders={detailOrders}
+          totalSum={detailSum}
+          needsAttention={detailNeedsAttention}
+          onPrepared={() => setPreparedTableId(detailTableId)}
+          onClose={() => setDetailTableId(null)}
+        />
+      )}
+
       <h2 className={styles.heading}>Masalar ve siparişler</h2>
       <p className={styles.hint}>
-        QR ile gelen müşteriler <code className={styles.code}>masa</code> parametresiyle kaydedilir; burada masa
-        bazında görürsünüz.
+        QR ile gelen müşteriler <code className={styles.code}>masa</code> parametresiyle kaydedilir;
+        burada masa bazında görürsünüz.
       </p>
       {loading ? <p className={styles.loading}>Yükleniyor…</p> : null}
+      {addError ? (
+        <p className={styles.addErr} role="alert">
+          {addError}
+        </p>
+      ) : null}
+
       <ul className={styles.grid} aria-label="Masalar">
-        {CAFE_TABLES.map((table) => {
+        {tables.map((table) => {
           const tableOrders = byTable.get(table.id) ?? []
           const sum = tableOrders.reduce((acc, o) => acc + o.totalTry, 0)
           const needsAttention = attentionTableIds.has(table.id)
+          const tableName = names.get(table.id) ?? table.name
+          const itemCount = tableOrders.reduce((acc, o) => acc + o.lines.reduce((s, l) => s + l.qty, 0), 0)
+          const otherTables = tables.filter((t) => t.id !== table.id)
+
           return (
-            <li
-              key={table.id}
-              className={cn(styles.card, needsAttention && styles.cardAttention)}
-            >
-              <div className={styles.cardTop}>
-                <div className={styles.cardHead}>
-                  <span className={styles.cardTitle}>{table.name}</span>
-                  <span className={styles.cardMeta}>Masa {table.id}</span>
-                </div>
+            <li key={table.id} className={styles.card}>
+              {itemCount > 0 && (
+                <span className={styles.itemBadge} aria-label={`${itemCount} ürün`}>
+                  {itemCount}
+                </span>
+              )}
+
+              <div className={styles.cardMenu}>
                 <TableCardMenu
                   tableNumber={table.id}
+                  tableName={tableName}
                   orderCount={tableOrders.length}
+                  otherTables={otherTables}
                   onResetComplete={onOrdersRefresh}
+                  onRename={(newName) => rename(table.id, newName)}
+                  onTransfer={async (toId) => {
+                    await transferOrdersBetweenTables(table.id, toId)
+                    onClearTableAttention(table.id)
+                  }}
                 />
               </div>
-              <div className={styles.cardTotals}>
-                <span className={styles.orderCount}>{tableOrders.length} sipariş</span>
-                <span className={styles.sum}>{formatPriceTry(sum)}</span>
-              </div>
-              {needsAttention ? (
-                <button
-                  type="button"
-                  className={styles.preparedBtn}
-                  onClick={() => setPreparedTableId(table.id)}
-                >
+
+              <button
+                type="button"
+                className={styles.cardBody}
+                onClick={() => setDetailTableId(table.id)}
+                aria-label={`${tableName} detaylarını görüntüle`}
+              >
+                <TableMasaIcon label={tableName} highlight={needsAttention} />
+
+                <div className={styles.cardTotals}>
+                  <span className={styles.orderCount}>{tableOrders.length} sipariş</span>
+                  <span className={styles.sum}>{formatPriceTry(sum)}</span>
+                </div>
+              </button>
+
+              {needsAttention && (
+                <button type="button" className={styles.preparedBtn} onClick={() => setPreparedTableId(table.id)}>
                   Sipariş hazırlandı
                 </button>
-              ) : null}
-              {tableOrders.length === 0 ? (
-                <p className={styles.empty}>Henüz sipariş yok</p>
-              ) : (
-                <ul className={styles.orderList}>
-                  {tableOrders.map((o) => (
-                    <li key={o.id} className={styles.order}>
-                      <div className={styles.orderTop}>
-                        <time className={styles.time} dateTime={o.createdAt}>
-                          {formatWhen(o.createdAt)}
-                        </time>
-                        <span className={styles.orderSum}>{formatPriceTry(o.totalTry)}</span>
-                      </div>
-                      <ul className={styles.lines}>
-                        {o.lines.map((line) => (
-                          <li key={`${o.id}-${line.key}`} className={styles.line}>
-                            <span>
-                              {line.name}{' '}
-                              <span className={styles.dim}>×{line.qty}</span>
-                            </span>
-                            <span>{formatPriceTry(line.price * line.qty)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
               )}
             </li>
           )
         })}
+
+        <li className={cn(styles.card, styles.addCard)}>
+          <button
+            type="button"
+            className={styles.addCardBtn}
+            disabled={!canAddTable}
+            aria-label="Yeni masa ekle"
+            onClick={() => {
+              setAddError(null)
+              void addTable().catch((e) =>
+                setAddError(e instanceof Error ? e.message : 'Masa eklenemedi.'),
+              )
+            }}
+          >
+            <span className={styles.addPlus} aria-hidden>
+              +
+            </span>
+          </button>
+        </li>
       </ul>
     </div>
   )

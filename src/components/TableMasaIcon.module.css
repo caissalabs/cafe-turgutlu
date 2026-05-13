@@ -1,0 +1,82 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.svg {
+  display: block;
+  width: clamp(5.75rem, 11vw, 7rem);
+  height: auto;
+}
+
+.chair {
+  fill: #f0f2f7;
+  stroke: #2c2d36;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+}
+
+.table {
+  fill: #e8eaf2;
+  stroke: #2c2d36;
+  stroke-width: 2.8;
+  stroke-linejoin: round;
+}
+
+.label {
+  font-size: clamp(0.88rem, 1.45vw, 1.02rem);
+  font-weight: 700;
+  color: #1c1d24;
+  letter-spacing: -0.01em;
+  text-align: center;
+  line-height: 1;
+}
+
+/* ── Yeni sipariş: yeşil yanıp sönme ── */
+
+.root.highlight .chair,
+.root.highlight .table {
+  animation: masaBlink 0.8s ease-in-out infinite;
+}
+
+.root.highlight .label {
+  animation: masaLabelBlink 0.8s ease-in-out infinite;
+}
+
+.root.highlight {
+  animation: masaGlow 0.8s ease-in-out infinite;
+}
+
+@keyframes masaBlink {
+  0%, 100% { stroke: #2c2d36; }
+  50%       { stroke: #16a34a; }
+}
+
+@keyframes masaLabelBlink {
+  0%, 100% { color: #1c1d24; }
+  50%       { color: #15803d; }
+}
+
+@keyframes masaGlow {
+  0%, 100% { filter: none; }
+  50%       { filter: drop-shadow(0 0 8px rgba(22, 163, 74, 0.5)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root.highlight .chair,
+  .root.highlight .table,
+  .root.highlight .label,
+  .root.highlight {
+    animation: none;
+  }
+  .root.highlight .chair,
+  .root.highlight .table {
+    stroke: #16a34a;
+  }
+  .root.highlight .label {
+    color: #15803d;
+  }
+}

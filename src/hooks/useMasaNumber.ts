@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { TABLE_COUNT } from '@/constants/tables'
+import { MAX_TABLE_ID } from '@/constants/tables'
 
 export const MASA_SESSION_KEY = 'cafe-turgutlu-masa'
 
@@ -16,7 +16,7 @@ export function clearMasaSession(): void {
 function parseMasa(raw: string | null): number | null {
   if (raw == null || raw === '') return null
   const n = Number.parseInt(raw, 10)
-  if (!Number.isFinite(n) || n < 1 || n > TABLE_COUNT) return null
+  if (!Number.isFinite(n) || n < 1 || n > MAX_TABLE_ID) return null
   return n
 }
 
@@ -58,7 +58,7 @@ export function useMasaNumber(options?: UseMasaNumberOptions) {
 
   const setMasa = useCallback(
     (n: number) => {
-      if (n < 1 || n > TABLE_COUNT) return
+      if (n < 1 || n > MAX_TABLE_ID) return
       sessionStorage.setItem(MASA_SESSION_KEY, String(n))
       navigate(`${location.pathname}?masa=${n}`, { replace: true })
     },

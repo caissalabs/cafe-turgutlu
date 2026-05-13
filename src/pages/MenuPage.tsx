@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { MENU_CATEGORIES, formatPriceTry } from '@/constants/menu'
-import { TABLE_COUNT } from '@/constants/tables'
+import { CAFE_TABLES, type CafeTable } from '@/constants/tables'
 import { clearMasaSession, useMasaNumber } from '@/hooks/useMasaNumber'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { fetchTableNames } from '@/services/tableRepository'
 import { submitOrder } from '@/services/orderRepository'
 import type { OrderLine } from '@/types/order'
 import { cn } from '@/utils/cn'
@@ -30,6 +31,14 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
   const [cart, setCart] = useState<Record<string, OrderLine>>({})
   const [submitting, setSubmitting] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [staffTables, setStaffTables] = useState<CafeTable[]>(() => [...CAFE_TABLES])
+
+  useEffect(() => {
+    if (!staff) return
+    void fetchTableNames().then((rows) => {
+      if (rows.length > 0) setStaffTables(rows.map((r) => ({ id: r.id, name: r.name })))
+    })
+  }, [staff])
 
   const cartLines = useMemo(() => Object.values(cart).filter((l) => l.qty > 0), [cart])
   const cartTotal = useMemo(
@@ -165,9 +174,9 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
               }}
             >
               <option value="">Seçin…</option>
-              {Array.from({ length: TABLE_COUNT }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={n}>
-                  Masa {n}
+              {staffTables.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
                 </option>
               ))}
             </select>

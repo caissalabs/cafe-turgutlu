@@ -14,9 +14,9 @@
 }
 
 .inner {
-  max-width: 960px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 1rem 1.25rem;
+  padding: 1rem clamp(1rem, 3vw, 1.75rem);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -79,10 +79,10 @@
 
 .main {
   flex: 1;
-  max-width: 960px;
+  max-width: 1180px;
   width: 100%;
   margin: 0 auto;
-  padding: 2rem 1.25rem 3rem;
+  padding: 2rem clamp(1rem, 3vw, 1.75rem) 3rem;
 }
 
 .footer {

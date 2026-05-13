@@ -221,3 +221,61 @@
   outline: none;
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
+
+.menuItemDanger {
+  color: #c92a2a;
+}
+
+.menuItemDanger:hover:not(:disabled) {
+  background: color-mix(in srgb, #c92a2a 10%, var(--surface));
+}
+
+/* ── İsim değiştir input ── */
+
+.inputLabel {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 1.25rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+.select {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 1.25rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
