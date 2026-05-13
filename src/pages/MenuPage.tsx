@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { MENU_CATEGORIES, formatPriceTry } from '@/constants/menu'
-import { CAFE_TABLES, type CafeTable } from '@/constants/tables'
+import { CAFE_TABLES, type CafeTable, canonicalTableName, tableDisplayLabel } from '@/constants/tables'
 import { clearMasaSession, useMasaNumber } from '@/hooks/useMasaNumber'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { fetchTableNames } from '@/services/tableRepository'
@@ -36,7 +36,15 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
   useEffect(() => {
     if (!staff) return
     void fetchTableNames().then((rows) => {
-      if (rows.length > 0) setStaffTables(rows.map((r) => ({ id: r.id, name: r.name })))
+      if (rows.length > 0) {
+        setStaffTables(
+          rows.map((r) => ({
+            id: r.id,
+            name: canonicalTableName(r.id),
+            nickname: r.nickname,
+          })),
+        )
+      }
     })
   }, [staff])
 
@@ -176,7 +184,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
               <option value="">Seçin…</option>
               {staffTables.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}
+                  {tableDisplayLabel(t)}
                 </option>
               ))}
             </select>

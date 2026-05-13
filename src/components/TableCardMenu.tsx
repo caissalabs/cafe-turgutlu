@@ -1,9 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { deleteOrdersForTable } from '@/services/orderRepository'
+import { canonicalTableName } from '@/constants/tables'
 import styles from './TableCardMenu.module.css'
 
-type ModalPhase = 'idle' | 'confirm-reset' | 'loading' | 'error' | 'rename' | 'transfer'
+type ModalPhase =
+  | 'idle'
+  | 'confirm-reset'
+  | 'confirm-delete-table'
+  | 'loading'
+  | 'error'
+  | 'rename'
+  | 'transfer'
 
 type TableOption = {
   id: number
@@ -12,27 +20,37 @@ type TableOption = {
 
 type TableCardMenuProps = {
   tableNumber: number
+  /** Kartta görünen etiket (takma ad veya Masa X). */
   tableName: string
+  /** Düzenlenen takma ad; boşsa Masa no gösterilir. */
+  tableNickname: string | null
   orderCount: number
   otherTables: TableOption[]
+  /** En az bir masa kalsın isteniyorsa false */
+  canDeleteTable: boolean
   onResetComplete: () => void | Promise<void>
-  onRename: (name: string) => Promise<void>
+  onSetNickname: (nickname: string | null) => Promise<void>
   onTransfer: (toTableId: number) => Promise<void>
+  /** Siparişleri silip masa satırını kaldırır (üst bileşen uygular) */
+  onDeleteTable: () => Promise<void>
 }
 
 export function TableCardMenu({
   tableNumber,
   tableName,
+  tableNickname,
   orderCount,
   otherTables,
+  canDeleteTable,
   onResetComplete,
-  onRename,
+  onSetNickname,
   onTransfer,
+  onDeleteTable,
 }: TableCardMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [phase, setPhase] = useState<ModalPhase>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [renameValue, setRenameValue] = useState(tableName)
+  const [nicknameDraft, setNicknameDraft] = useState('')
   const [transferTarget, setTransferTarget] = useState('')
   const wrapRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -43,13 +61,13 @@ export function TableCardMenu({
 
   useEffect(() => {
     if (phase === 'rename') {
-      setRenameValue(tableName)
+      setNicknameDraft(tableNickname?.trim() ?? '')
       setTimeout(() => inputRef.current?.select(), 50)
     }
     if (phase === 'transfer') {
       setTransferTarget('')
     }
-  }, [phase, tableName])
+  }, [phase, tableNickname])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -105,6 +123,13 @@ export function TableCardMenu({
     setPhase('transfer')
   }
 
+  const openConfirmDeleteTable = () => {
+    if (!canDeleteTable || loading) return
+    setMenuOpen(false)
+    setErrorMsg(null)
+    setPhase('confirm-delete-table')
+  }
+
   const closeModal = () => {
     if (loading) return
     setPhase('idle')
@@ -128,15 +153,14 @@ export function TableCardMenu({
     }
   }
 
-  const runRename = async () => {
-    const trimmed = renameValue.trim()
-    if (!trimmed) return
+  const runSetNickname = async () => {
+    const trimmed = nicknameDraft.trim()
     setPhase('loading')
     try {
-      await onRename(trimmed)
+      await onSetNickname(trimmed || null)
       setPhase('idle')
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : 'İsim kaydedilemedi.')
+      setErrorMsg(e instanceof Error ? e.message : 'Takma ad kaydedilemedi.')
       setPhase('error')
     }
   }
@@ -152,6 +176,19 @@ export function TableCardMenu({
       setErrorMsg(null)
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : 'Aktarım başarısız.')
+      setPhase('error')
+    }
+  }
+
+  const runDeleteTable = async () => {
+    setPhase('loading')
+    try {
+      await onDeleteTable()
+      await onResetComplete()
+      setPhase('idle')
+      setErrorMsg(null)
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Masa silinemedi.')
       setPhase('error')
     }
   }
@@ -197,33 +234,33 @@ export function TableCardMenu({
           {phase === 'rename' ? (
             <>
               <h2 className={styles.modalTitle} id={titleId}>
-                Masa ismini değiştir
+                Takma ad
               </h2>
-              <label className={styles.inputLabel} htmlFor={`${titleId}-rename`}>
-                Yeni isim
+              <p className={styles.modalText}>
+                Buraya yazdığınız metin kartta ve seçim listelerinde görünür. Sipariş ve QR ile masa
+                kimliği sabittir: <strong>{canonicalTableName(tableNumber)}</strong>.
+              </p>
+              <label className={styles.inputLabel} htmlFor={`${titleId}-nick`}>
+                Görünen ad (boş bırakırsanız {canonicalTableName(tableNumber)} kullanılır)
               </label>
               <input
                 ref={inputRef}
-                id={`${titleId}-rename`}
+                id={`${titleId}-nick`}
                 className={styles.input}
                 type="text"
-                value={renameValue}
-                maxLength={40}
-                onChange={(e) => setRenameValue(e.target.value)}
+                value={nicknameDraft}
+                maxLength={48}
+                placeholder="Örn. Bahçe, Köşe…"
+                onChange={(e) => setNicknameDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') void runRename()
+                  if (e.key === 'Enter') void runSetNickname()
                 }}
               />
               <div className={styles.modalActions}>
                 <button type="button" className={styles.btnGhost} onClick={closeModal}>
                   Vazgeç
                 </button>
-                <button
-                  type="button"
-                  className={styles.btnPrimary}
-                  disabled={!renameValue.trim()}
-                  onClick={() => void runRename()}
-                >
+                <button type="button" className={styles.btnPrimary} onClick={() => void runSetNickname()}>
                   Kaydet
                 </button>
               </div>
@@ -266,6 +303,26 @@ export function TableCardMenu({
                   onClick={() => void runTransfer()}
                 >
                   Aktar
+                </button>
+              </div>
+            </>
+          ) : null}
+
+          {phase === 'confirm-delete-table' ? (
+            <>
+              <h2 className={styles.modalTitle} id={titleId}>
+                Masayı sil?
+              </h2>
+              <p className={styles.modalText}>
+                <strong>{tableName}</strong> listeden kaldırılır. Bu masaya ait tüm sipariş kayıtları da
+                silinir. Bu işlem geri alınamaz.
+              </p>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnGhost} onClick={closeModal}>
+                  Vazgeç
+                </button>
+                <button type="button" className={styles.btnDanger} onClick={() => void runDeleteTable()}>
+                  Masayı sil
                 </button>
               </div>
             </>
@@ -317,7 +374,7 @@ export function TableCardMenu({
           <ul className={styles.menu} role="menu">
             <li role="none">
               <button type="button" role="menuitem" className={styles.menuItem} onClick={openRename}>
-                İsmi değiştir
+                Takma ad düzenle
               </button>
             </li>
             <li role="none">
@@ -340,6 +397,17 @@ export function TableCardMenu({
                 onClick={openConfirmReset}
               >
                 Siparişleri sıfırla
+              </button>
+            </li>
+            <li role="none" className={styles.menuDivider}>
+              <button
+                type="button"
+                role="menuitem"
+                className={`${styles.menuItem} ${styles.menuItemDeleteMasa}`}
+                disabled={!canDeleteTable || loading}
+                onClick={openConfirmDeleteTable}
+              >
+                Masayı sil
               </button>
             </li>
           </ul>

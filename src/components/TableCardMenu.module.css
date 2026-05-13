@@ -230,6 +230,21 @@
   background: color-mix(in srgb, #c92a2a 10%, var(--surface));
 }
 
+.menuDivider {
+  border-top: 1px solid var(--border);
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
+}
+
+.menuItemDeleteMasa {
+  color: #c92a2a;
+  font-weight: 700;
+}
+
+.menuItemDeleteMasa:hover:not(:disabled) {
+  background: color-mix(in srgb, #c92a2a 14%, var(--surface));
+}
+
 /* ── İsim değiştir input ── */
 
 .inputLabel {

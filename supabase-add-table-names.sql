@@ -1,5 +1,8 @@
 -- cafe_tables: Masa isimlerini saklar.
 -- SQL Editor'de bir kez çalıştırın.
+--
+-- nickname sütunu ve name normalizasyonu için ayrıca şunu çalıştırın:
+--   supabase-add-table-nickname.sql
 
 create table if not exists public.cafe_tables (
   id   integer primary key check (id >= 1 and id <= 50),

@@ -3,10 +3,10 @@ import { OrderPreparedModal } from '@/components/OrderPreparedModal'
 import { TableCardMenu } from '@/components/TableCardMenu'
 import { TableDetailModal } from '@/components/TableDetailModal'
 import { TableMasaIcon } from '@/components/TableMasaIcon'
-import { MAX_TABLE_ID } from '@/constants/tables'
+import { MAX_TABLE_ID, MIN_TABLE_COUNT, tableDisplayLabel } from '@/constants/tables'
 import { formatPriceTry } from '@/constants/menu'
 import { useCafeTables } from '@/hooks/useCafeTables'
-import { transferOrdersBetweenTables } from '@/services/orderRepository'
+import { deleteOrdersForTable, transferOrdersBetweenTables } from '@/services/orderRepository'
 import type { CafeOrder } from '@/types/order'
 import { cn } from '@/utils/cn'
 import styles from './TablesPanel.module.css'
@@ -29,7 +29,7 @@ export function TablesPanel({
   const [preparedTableId, setPreparedTableId] = useState<number | null>(null)
   const [detailTableId, setDetailTableId] = useState<number | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
-  const { tables, names, rename, addTable } = useCafeTables()
+  const { tables, names, setNickname, addTable, removeTable } = useCafeTables()
 
   const byTable = useMemo(() => {
     const map = new Map<number, CafeOrder[]>()
@@ -46,12 +46,14 @@ export function TablesPanel({
   }, [orders, tables])
 
   const detailOrders = detailTableId != null ? (byTable.get(detailTableId) ?? []) : []
-  const detailTableName = detailTableId != null ? (names.get(detailTableId) ?? `Masa ${detailTableId}`) : ''
+  const detailTableName =
+    detailTableId != null ? (names.get(detailTableId) ?? `Masa ${detailTableId}`) : ''
   const detailSum = detailOrders.reduce((acc, o) => acc + o.totalTry, 0)
   const detailNeedsAttention = detailTableId != null && attentionTableIds.has(detailTableId)
 
   const lastTableId = tables.length ? tables[tables.length - 1]!.id : 0
   const canAddTable = lastTableId < MAX_TABLE_ID
+  const canDeleteAnyTable = tables.length > MIN_TABLE_COUNT
 
   return (
     <div className={styles.wrap}>
@@ -92,9 +94,11 @@ export function TablesPanel({
           const tableOrders = byTable.get(table.id) ?? []
           const sum = tableOrders.reduce((acc, o) => acc + o.totalTry, 0)
           const needsAttention = attentionTableIds.has(table.id)
-          const tableName = names.get(table.id) ?? table.name
+          const tableName = names.get(table.id) ?? tableDisplayLabel(table)
           const itemCount = tableOrders.reduce((acc, o) => acc + o.lines.reduce((s, l) => s + l.qty, 0), 0)
-          const otherTables = tables.filter((t) => t.id !== table.id)
+          const otherTables = tables
+            .filter((t) => t.id !== table.id)
+            .map((t) => ({ id: t.id, name: tableDisplayLabel(t) }))
 
           return (
             <li key={table.id} className={styles.card}>
@@ -110,11 +114,19 @@ export function TablesPanel({
                   tableName={tableName}
                   orderCount={tableOrders.length}
                   otherTables={otherTables}
+                  canDeleteTable={canDeleteAnyTable}
+                  tableNickname={table.nickname}
                   onResetComplete={onOrdersRefresh}
-                  onRename={(newName) => rename(table.id, newName)}
+                  onSetNickname={(nick) => setNickname(table.id, nick)}
                   onTransfer={async (toId) => {
                     await transferOrdersBetweenTables(table.id, toId)
                     onClearTableAttention(table.id)
+                  }}
+                  onDeleteTable={async () => {
+                    await deleteOrdersForTable(table.id)
+                    await removeTable(table.id)
+                    onClearTableAttention(table.id)
+                    setDetailTableId((cur) => (cur === table.id ? null : cur))
                   }}
                 />
               </div>
