@@ -9,7 +9,7 @@ import styles from './LoginPage.module.css'
 type LocationState = { from?: { pathname?: string } }
 
 export function LoginPage() {
-  useDocumentTitle('Cafe Turgutlu — Yönetici girişi')
+  useDocumentTitle('CafeNET — Yönetici girişi')
   const { isAuthenticated, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -47,7 +47,7 @@ export function LoginPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>Yönetici girişi</h1>
-        <p className={styles.subtitle}>Cafe Turgutlu paneline erişim</p>
+        <p className={styles.subtitle}>CafeNET paneline erişim</p>
 
         <form
           className={styles.form}

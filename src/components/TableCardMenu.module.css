@@ -245,6 +245,19 @@
   background: color-mix(in srgb, #c92a2a 14%, var(--surface));
 }
 
+.menuItemSettle {
+  color: #2f9e44;
+  font-weight: 700;
+}
+
+.menuItemSettle:hover:not(:disabled) {
+  background: color-mix(in srgb, #2f9e44 14%, var(--surface));
+}
+
+.menuItemSettle:focus-visible {
+  background: color-mix(in srgb, #2f9e44 12%, var(--surface));
+}
+
 /* ── İsim değiştir input ── */
 
 .inputLabel {

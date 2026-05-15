@@ -10,7 +10,7 @@ import { useOrders } from '@/hooks/useOrders'
 import styles from './AdminHomePage.module.css'
 
 export function AdminHomePage() {
-  useDocumentTitle('Cafe Turgutlu — Yönetim paneli')
+  useDocumentTitle('CafeNET — Yönetici Paneli')
   const { businessId } = useAuth()
   const { orders, loading, error, refreshOrders } = useOrders(businessId)
   const cafe = useCafeTables(businessId)
@@ -38,7 +38,7 @@ export function AdminHomePage() {
           <Link to="/home/menu">Menüyü düzenle →</Link>
         </div>
       ) : null}
-      <h1>Yönetim paneli</h1>
+      <h1 className={styles.pageTitleSr}>Yönetici Paneli</h1>
       {error ? (
         <p className={styles.err} role="alert">
           {error}

@@ -1,11 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { settleTablePayment } from '@/services/paymentHistoryRepository'
 import { deleteOrdersForTable } from '@/services/orderRepository'
 import { canonicalTableName } from '@/constants/tables'
+import { playCashRegisterSound } from '@/utils/cashRegisterSound'
 import styles from './TableCardMenu.module.css'
 
 type ModalPhase =
   | 'idle'
+  | 'confirm-settle'
   | 'confirm-reset'
   | 'confirm-delete-table'
   | 'loading'
@@ -34,9 +37,8 @@ type TableCardMenuProps = {
   onTransfer: (toTableId: number) => Promise<void>
   /** Siparişleri silip masa satırını kaldırır (üst bileşen uygular) */
   onDeleteTable: () => Promise<void>
-  /** Masalar ekranı: personel siparişi — modal */
-  onStaffAddOrder?: () => void
-  onStaffEditOrder?: () => void
+  /** Masalar: tek sipariş modalı */
+  onStaffOrder?: () => void
 }
 
 export function TableCardMenu({
@@ -51,8 +53,7 @@ export function TableCardMenu({
   onSetNickname,
   onTransfer,
   onDeleteTable,
-  onStaffAddOrder,
-  onStaffEditOrder,
+  onStaffOrder,
 }: TableCardMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [phase, setPhase] = useState<ModalPhase>('idle')
@@ -111,6 +112,13 @@ export function TableCardMenu({
     return () => window.removeEventListener('keydown', onKey)
   }, [phase])
 
+  const openConfirmSettle = () => {
+    if (orderCount === 0 || loading) return
+    setMenuOpen(false)
+    setErrorMsg(null)
+    setPhase('confirm-settle')
+  }
+
   const openConfirmReset = () => {
     if (orderCount === 0 || loading) return
     setMenuOpen(false)
@@ -137,15 +145,9 @@ export function TableCardMenu({
     setPhase('confirm-delete-table')
   }
 
-  const openStaffAddOrder = () => {
+  const openStaffOrder = () => {
     setMenuOpen(false)
-    onStaffAddOrder?.()
-  }
-
-  const openStaffEditOrder = () => {
-    if (orderCount === 0) return
-    setMenuOpen(false)
-    onStaffEditOrder?.()
+    onStaffOrder?.()
   }
 
   const closeModal = () => {
@@ -156,6 +158,25 @@ export function TableCardMenu({
 
   const backdropDismiss = () => {
     if (phase !== 'idle' && phase !== 'loading') closeModal()
+  }
+
+  const runSettlePayment = async () => {
+    if (!businessId) {
+      setErrorMsg('İşletme bilgisi eksik.')
+      setPhase('error')
+      return
+    }
+    playCashRegisterSound()
+    setPhase('loading')
+    try {
+      await settleTablePayment(businessId, tableNumber, { tableDisplayName: tableName })
+      await onResetComplete()
+      setPhase('idle')
+      setErrorMsg(null)
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Ödeme kaydedilemedi.')
+      setPhase('error')
+    }
   }
 
   const runReset = async () => {
@@ -234,6 +255,30 @@ export function TableCardMenu({
           aria-labelledby={titleId}
           onClick={(e) => e.stopPropagation()}
         >
+          {phase === 'confirm-settle' ? (
+            <>
+              <h2 className={styles.modalTitle} id={titleId}>
+                Ödeme Alındı?
+              </h2>
+              <p className={styles.modalText}>
+                <strong>{tableName}</strong> hesabı kapatılacak; tutar ödeme geçmişine kaydedilir ve bu masadaki
+                siparişler temizlenir. Geri alınamaz.
+              </p>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnGhost} onClick={closeModal}>
+                  Vazgeç
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  onClick={() => void runSettlePayment()}
+                >
+                  Ödeme Alındı
+                </button>
+              </div>
+            </>
+          ) : null}
+
           {phase === 'confirm-reset' ? (
             <>
               <h2 className={styles.modalTitle} id={titleId}>
@@ -395,27 +440,14 @@ export function TableCardMenu({
         </button>
         {menuOpen ? (
           <ul className={styles.menu} role="menu">
-            {onStaffAddOrder ? (
+            {onStaffOrder ? (
               <li role="none">
-                <button type="button" role="menuitem" className={styles.menuItem} onClick={openStaffAddOrder}>
-                  Sipariş ekle
+                <button type="button" role="menuitem" className={styles.menuItem} onClick={openStaffOrder}>
+                  Sipariş ekle / düzenle
                 </button>
               </li>
             ) : null}
-            {onStaffEditOrder ? (
-              <li role="none">
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={styles.menuItem}
-                  disabled={orderCount === 0 || loading}
-                  onClick={openStaffEditOrder}
-                >
-                  Sipariş düzenle
-                </button>
-              </li>
-            ) : null}
-            {(onStaffAddOrder || onStaffEditOrder) ? (
+            {onStaffOrder ? (
               <li className={styles.menuDivider} role="separator" />
             ) : null}
             <li role="none">
@@ -443,6 +475,17 @@ export function TableCardMenu({
                 onClick={openConfirmReset}
               >
                 Siparişleri sıfırla
+              </button>
+            </li>
+            <li role="none" className={styles.menuDivider}>
+              <button
+                type="button"
+                role="menuitem"
+                className={`${styles.menuItem} ${styles.menuItemSettle}`}
+                disabled={orderCount === 0 || loading}
+                onClick={openConfirmSettle}
+              >
+                Ödeme Alındı
               </button>
             </li>
             <li role="none" className={styles.menuDivider}>

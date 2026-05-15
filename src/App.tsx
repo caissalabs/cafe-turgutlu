@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthProvider'
 import { useAuth } from '@/hooks/useAuth'
 import { MenuEditorPage } from '@/pages/MenuEditorPage'
 import { AdminHomePage } from '@/pages/AdminHomePage'
+import { PaymentHistoryPage } from '@/pages/PaymentHistoryPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MenuPage } from '@/pages/MenuPage'
 import { OrderSuccessPage } from '@/pages/OrderSuccessPage'
@@ -25,6 +26,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Layout />}>
               <Route index element={<AdminHomePage />} />
+              <Route path="odeme-gecmisi" element={<PaymentHistoryPage />} />
               <Route path="menu" element={<MenuEditorPage />} />
               <Route path="menu/onizleme" element={<MenuPage variant="staff" />} />
             </Route>

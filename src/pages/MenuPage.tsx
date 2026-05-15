@@ -47,7 +47,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   const { masa, hasMasa } = useMasaNumber({ source: 'url-only' })
 
-  useDocumentTitle(staff ? 'Cafe Turgutlu — Menü (yönetim)' : 'Cafe Turgutlu — Menü')
+  useDocumentTitle(staff ? 'CafeNET — Menü (önizleme)' : 'CafeNET — Menü')
 
   const {
     categories: menuCategories,
@@ -154,7 +154,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <span className={styles.brand}>Cafe Turgutlu</span>
+            <span className={styles.brand}>CafeNET</span>
           </div>
         </header>
         <main className={styles.main}>
@@ -165,7 +165,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
             </p>
           </div>
         </main>
-        <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+        <footer className={styles.footer}>CafeNET</footer>
       </div>
     )
   }
@@ -182,7 +182,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <span className={styles.brand}>Cafe Turgutlu</span>
+            <span className={styles.brand}>CafeNET</span>
             <span className={styles.masaBadge}>Masa {masa}</span>
           </div>
         </header>
@@ -232,7 +232,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
             </div>
           </div>
         </main>
-        <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+        <footer className={styles.footer}>CafeNET</footer>
       </div>
     )
   }
@@ -303,7 +303,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
           )}
         </main>
 
-        {!staff ? <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer> : null}
+        {!staff ? <footer className={styles.footer}>CafeNET</footer> : null}
 
         <div className={styles.cartBar} role="region" aria-label="Sipariş ver">
           <div className={styles.cartInner}>
@@ -330,7 +330,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
       {!staff ? (
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <span className={styles.brand}>Cafe Turgutlu</span>
+            <span className={styles.brand}>CafeNET</span>
             <span className={styles.masaBadge}>Masa {masa}</span>
           </div>
         </header>
@@ -448,7 +448,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
         ) : null}
       </main>
 
-      {!staff ? <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer> : null}
+      {!staff ? <footer className={styles.footer}>CafeNET</footer> : null}
 
       {!staff ? (
         <div className={styles.cartBar} role="region" aria-label="Sepet">

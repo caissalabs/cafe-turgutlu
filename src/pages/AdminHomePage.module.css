@@ -3,6 +3,19 @@
   gap: 1rem;
 }
 
+/* Görsel başlık header’da; sayfa hiyerarşisi için yalnızca ekran okuyucuya */
+.pageTitleSr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .err {
   margin: 0;
   padding: 0.65rem 0.85rem;

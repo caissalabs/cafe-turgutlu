@@ -1,60 +1,163 @@
-/** Misafir etkileşimi sonrası çalışır; sipariş bildirimi için tekrarlayan zil. */
+/**
+ * Yeni sipariş bildirimi — `public/audio/new-order-notification.mp3`, döngü.
+ * HTMLAudioElement Realtime ile gelince çoğu tarayıcıda autoplay engeline takılır;
+ * kullanıcı etkileşiminde unlock + önbelleğe decode sonrası AudioBufferSource (loop) kullanılır.
+ */
+
+const base = import.meta.env.BASE_URL
+const NOTIFICATION_LOOP_URL = base.endsWith('/')
+  ? `${base}audio/new-order-notification.mp3`
+  : `${base}/audio/new-order-notification.mp3`
+
+function getAudioCtor(): typeof AudioContext | null {
+  const w = window as unknown as {
+    AudioContext?: typeof AudioContext
+    webkitAudioContext?: typeof AudioContext
+  }
+  return w.AudioContext ?? w.webkitAudioContext ?? null
+}
 
 let ctx: AudioContext | null = null
-let intervalId: ReturnType<typeof setInterval> | null = null
+let decodedBuffer: AudioBuffer | null = null
+let decodePromise: Promise<AudioBuffer | null> | null = null
+let wantPlaying = false
+let retryIntervalId: ReturnType<typeof setInterval> | null = null
+let activeSource: AudioBufferSourceNode | null = null
+let activeGain: GainNode | null = null
 
-function playDing(ac: AudioContext) {
-  const t = ac.currentTime
-  const osc = ac.createOscillator()
-  const g = ac.createGain()
-  osc.type = 'sine'
-  osc.connect(g)
-  g.connect(ac.destination)
-  osc.frequency.setValueAtTime(880, t)
-  osc.frequency.exponentialRampToValueAtTime(440, t + 0.14)
-  g.gain.setValueAtTime(0.0001, t)
-  g.gain.exponentialRampToValueAtTime(0.32, t + 0.018)
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42)
-  osc.start(t)
-  osc.stop(t + 0.45)
+function clearRetryInterval(): void {
+  if (retryIntervalId != null) {
+    window.clearInterval(retryIntervalId)
+    retryIntervalId = null
+  }
+}
 
-  const osc2 = ac.createOscillator()
-  const g2 = ac.createGain()
-  osc2.type = 'triangle'
-  osc2.connect(g2)
-  g2.connect(ac.destination)
-  osc2.frequency.setValueAtTime(1320, t + 0.08)
-  osc2.frequency.exponentialRampToValueAtTime(660, t + 0.22)
-  g2.gain.setValueAtTime(0.0001, t + 0.08)
-  g2.gain.exponentialRampToValueAtTime(0.12, t + 0.1)
-  g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.38)
-  osc2.start(t + 0.08)
-  osc2.stop(t + 0.42)
+function getContext(): AudioContext | null {
+  const Ctor = getAudioCtor()
+  if (!Ctor) return null
+  if (ctx?.state === 'closed') ctx = null
+  if (!ctx) ctx = new Ctor()
+  return ctx
+}
+
+function stopPlaybackGraph(): void {
+  if (activeSource) {
+    try {
+      activeSource.stop(0)
+    } catch {
+      /* zaten durmuş olabilir */
+    }
+    try {
+      activeSource.disconnect()
+    } catch {
+      /* */
+    }
+    activeSource = null
+  }
+  if (activeGain) {
+    try {
+      activeGain.disconnect()
+    } catch {
+      /* */
+    }
+    activeGain = null
+  }
+}
+
+function startPlaybackGraph(ac: AudioContext, buffer: AudioBuffer): void {
+  if (!wantPlaying) return
+  stopPlaybackGraph()
+
+  const gain = ac.createGain()
+  gain.gain.value = 0.92
+  gain.connect(ac.destination)
+
+  const src = ac.createBufferSource()
+  src.buffer = buffer
+  src.loop = true
+  src.connect(gain)
+  src.start(0)
+
+  activeGain = gain
+  activeSource = src
+}
+
+function tryStartAfterUnlock(): void {
+  const ac = getContext()
+  if (!ac || !wantPlaying || !decodedBuffer) return
+  if (ac.state !== 'running') return
+  startPlaybackGraph(ac, decodedBuffer)
+}
+
+async function ensureDecoded(): Promise<AudioBuffer | null> {
+  if (decodedBuffer) return decodedBuffer
+  if (decodePromise) return decodePromise
+
+  decodePromise = (async () => {
+    const ac = getContext()
+    if (!ac) return null
+    try {
+      const res = await fetch(NOTIFICATION_LOOP_URL)
+      if (!res.ok) return null
+      const raw = await res.arrayBuffer()
+      const buffer = await ac.decodeAudioData(raw.slice(0))
+      decodedBuffer = buffer
+      return buffer
+    } catch {
+      return null
+    } finally {
+      decodePromise = null
+    }
+  })()
+
+  return decodePromise
+}
+
+/** İlk dokunuşta bağlam + decode (yönetici panele girince zil hazır olur). */
+export function unlockNewOrderNotificationAudio(): void {
+  const ac = getContext()
+  if (!ac) return
+  void ac.resume().catch(() => {})
+  void ensureDecoded().then(() => {
+    if (wantPlaying) tryStartAfterUnlock()
+  })
 }
 
 export function startOrderAlarm(): void {
   stopOrderAlarm()
-  const Ctor =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-  if (!Ctor) return
-  ctx = new Ctor()
-  void ctx.resume().catch(() => {})
-  const loop = () => {
-    if (ctx?.state === 'suspended') void ctx.resume().catch(() => {})
-    if (ctx) playDing(ctx)
+  wantPlaying = true
+
+  const ac = getContext()
+  if (!ac) return
+
+  const attempt = (): void => {
+    if (!wantPlaying) return
+    void ac.resume().catch(() => {})
+    tryStartAfterUnlock()
   }
-  loop()
-  intervalId = window.setInterval(loop, 820)
+
+  attempt()
+  void ensureDecoded().then(() => {
+    attempt()
+  })
+
+  clearRetryInterval()
+  let ticks = 0
+  retryIntervalId = window.setInterval(() => {
+    if (!wantPlaying || activeSource) {
+      clearRetryInterval()
+      return
+    }
+    if (ticks++ > 120) {
+      clearRetryInterval()
+      return
+    }
+    attempt()
+  }, 250)
 }
 
 export function stopOrderAlarm(): void {
-  if (intervalId != null) {
-    window.clearInterval(intervalId)
-    intervalId = null
-  }
-  if (ctx) {
-    void ctx.close().catch(() => {})
-    ctx = null
-  }
+  wantPlaying = false
+  clearRetryInterval()
+  stopPlaybackGraph()
 }

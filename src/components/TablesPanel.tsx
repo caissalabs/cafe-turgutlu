@@ -12,9 +12,6 @@ import type { CafeOrder } from '@/types/order'
 import { cn } from '@/utils/cn'
 import styles from './TablesPanel.module.css'
 
-/** Sipariş ekle modunda `editOrders` için sabit dizi — her render'da `[]` vermek effect'i sonsuz tetikler. */
-const STAFF_ORDER_MODAL_EDIT_EMPTY: CafeOrder[] = []
-
 type TablesPanelProps = {
   businessId: string | null
   orders: CafeOrder[]
@@ -45,9 +42,7 @@ export function TablesPanel({
   const [preparedTableId, setPreparedTableId] = useState<number | null>(null)
   const [detailTableId, setDetailTableId] = useState<number | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
-  const [staffOrderModal, setStaffOrderModal] = useState<
-    null | { tableId: number; mode: 'add' | 'edit'; orders: CafeOrder[] }
-  >(null)
+  const [staffOrderTableId, setStaffOrderTableId] = useState<number | null>(null)
 
   const byTable = useMemo(() => {
     const map = new Map<number, CafeOrder[]>()
@@ -95,14 +90,13 @@ export function TablesPanel({
         />
       )}
 
-      {staffOrderModal != null && businessId ? (
+      {staffOrderTableId != null && businessId ? (
         <StaffTableOrderModal
           businessId={businessId}
-          tableNumber={staffOrderModal.tableId}
-          tableLabel={names.get(staffOrderModal.tableId) ?? `Masa ${staffOrderModal.tableId}`}
-          mode={staffOrderModal.mode}
-          editOrders={staffOrderModal.mode === 'edit' ? staffOrderModal.orders : STAFF_ORDER_MODAL_EDIT_EMPTY}
-          onClose={() => setStaffOrderModal(null)}
+          tableNumber={staffOrderTableId}
+          tableLabel={names.get(staffOrderTableId) ?? `Masa ${staffOrderTableId}`}
+          existingOrders={byTable.get(staffOrderTableId) ?? []}
+          onClose={() => setStaffOrderTableId(null)}
           onSaved={onOrdersRefresh}
         />
       ) : null}
@@ -147,7 +141,10 @@ export function TablesPanel({
                   otherTables={otherTables}
                   canDeleteTable={canDeleteAnyTable}
                   tableNickname={table.nickname}
-                  onResetComplete={onOrdersRefresh}
+                  onResetComplete={async () => {
+                    await onOrdersRefresh()
+                    setStaffOrderTableId((cur) => (cur === table.id ? null : cur))
+                  }}
                   onSetNickname={(nick) => setNickname(table.id, nick)}
                   onTransfer={async (toId) => {
                     if (!businessId) return
@@ -160,27 +157,10 @@ export function TablesPanel({
                     await removeTable(table.id)
                     void onClearTableAttention(table.id)
                     setDetailTableId((cur) => (cur === table.id ? null : cur))
-                    setStaffOrderModal((cur) => (cur?.tableId === table.id ? null : cur))
+                    setStaffOrderTableId((cur) => (cur === table.id ? null : cur))
                   }}
-                  onStaffAddOrder={
-                    businessId
-                      ? () =>
-                          setStaffOrderModal({
-                            tableId: table.id,
-                            mode: 'add',
-                            orders: [],
-                          })
-                      : undefined
-                  }
-                  onStaffEditOrder={
-                    businessId
-                      ? () =>
-                          setStaffOrderModal({
-                            tableId: table.id,
-                            mode: 'edit',
-                            orders: tableOrders,
-                          })
-                      : undefined
+                  onStaffOrder={
+                    businessId ? () => setStaffOrderTableId(table.id) : undefined
                   }
                 />
               </div>

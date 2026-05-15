@@ -24,8 +24,29 @@
 }
 
 .brand {
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  text-decoration: none;
+  color: var(--text);
   letter-spacing: -0.02em;
+}
+
+.brandName {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.brandTag {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 55%, var(--surface));
+  border: 1px solid var(--border);
+  line-height: 1.2;
 }
 
 .nav {

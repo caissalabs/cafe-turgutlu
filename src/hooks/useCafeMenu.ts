@@ -2,7 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CafeMenuCategory } from '@/types/menu'
 import { fetchMenu, subscribeMenu } from '@/services/menuRepository'
 
-export function useCafeMenu(businessId: string | null) {
+export type UseCafeMenuOptions = {
+  /**
+   * Varsayılan true. false iken Realtime kanalı açılmaz — aynı sayfada ikinci `useCafeMenu`
+   * (ör. StaffTableOrderModal) aynı kanal adına tekrar abone olup istemciyi bozmasın diye.
+   */
+  subscribeRealtime?: boolean
+}
+
+export function useCafeMenu(businessId: string | null, options?: UseCafeMenuOptions) {
+  const subscribeRealtime = options?.subscribeRealtime !== false
   const [categories, setCategories] = useState<CafeMenuCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,9 +40,9 @@ export function useCafeMenu(businessId: string | null) {
   }, [load])
 
   useEffect(() => {
-    if (!businessId) return () => {}
+    if (!businessId || !subscribeRealtime) return () => {}
     return subscribeMenu(businessId, () => void load())
-  }, [businessId, load])
+  }, [businessId, load, subscribeRealtime])
 
   const isConfigured = useMemo(
     () => categories.some((c) => c.items.length > 0),

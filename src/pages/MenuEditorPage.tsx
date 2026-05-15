@@ -50,7 +50,7 @@ function emptyItemState(): ItemEditorState {
 }
 
 export function MenuEditorPage() {
-  useDocumentTitle('Cafe Turgutlu — Menü yönetimi')
+  useDocumentTitle('CafeNET — Menü yönetimi')
   const { businessId } = useAuth()
   const { categories, loading, error, refreshMenu } = useCafeMenu(businessId)
   const [actionErr, setActionErr] = useState<string | null>(null)

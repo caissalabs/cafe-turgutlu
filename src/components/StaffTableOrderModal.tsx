@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { formatPriceTry } from '@/constants/menu'
 import { useCafeMenu } from '@/hooks/useCafeMenu'
-import {
-  deleteOrderById,
-  submitOrder,
-  updateOrder,
-} from '@/services/orderRepository'
+import { deleteOrderById, submitOrder, updateOrder } from '@/services/orderRepository'
 import type { CafeOrder, OrderLine } from '@/types/order'
 import styles from './StaffTableOrderModal.module.css'
+
+const NEW_ORDER = '__new__'
+
+function safeOrderLines(o: CafeOrder): OrderLine[] {
+  if (!Array.isArray(o.lines)) return []
+  return o.lines.map((l) => ({ ...l }))
+}
 
 function addQtyToLines(lines: OrderLine[], key: string, name: string, price: number): OrderLine[] {
   const idx = lines.findIndex((l) => l.key === key)
@@ -47,9 +50,8 @@ export type StaffTableOrderModalProps = {
   businessId: string
   tableNumber: number
   tableLabel: string
-  mode: 'add' | 'edit'
-  /** Düzenleme: bu masadaki siparişler (yeniden eskiye) */
-  editOrders: CafeOrder[]
+  /** Bu masadaki mevcut siparişler (yeniden eskiye); boşsa yalnızca yeni sipariş. */
+  existingOrders: CafeOrder[]
   onClose: () => void
   onSaved: () => void | Promise<void>
 }
@@ -58,8 +60,7 @@ export function StaffTableOrderModal({
   businessId,
   tableNumber,
   tableLabel,
-  mode,
-  editOrders,
+  existingOrders,
   onClose,
   onSaved,
 }: StaffTableOrderModalProps) {
@@ -69,41 +70,33 @@ export function StaffTableOrderModal({
     loading: menuLoading,
     isConfigured: menuConfigured,
     error: menuError,
-  } = useCafeMenu(businessId)
+  } = useCafeMenu(businessId, { subscribeRealtime: false })
 
-  const [lines, setLines] = useState<OrderLine[]>([])
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [targetKey, setTargetKey] = useState<string>(NEW_ORDER)
+  const [draftLines, setDraftLines] = useState<OrderLine[]>([])
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (mode !== 'add') return
-    setSelectedOrderId(null)
-    setOrderId(null)
-    setLines([])
-  }, [mode])
+  const isNew = targetKey === NEW_ORDER
+  const activeOrder = !isNew ? existingOrders.find((o) => o.id === targetKey) : undefined
 
+  /* Seçilen hedef silinmiş veya liste boşaldıysa yeni siparişe dön */
   useEffect(() => {
-    if (mode !== 'edit') return
-    if (editOrders.length === 0) {
-      setSelectedOrderId(null)
-      setOrderId(null)
-      setLines([])
+    if (targetKey === NEW_ORDER) return
+    if (!existingOrders.some((o) => o.id === targetKey)) {
+      setTargetKey(NEW_ORDER)
+    }
+  }, [existingOrders, targetKey])
+
+  /* Hedef veya sunucu verisi değişince taslağı senkronle */
+  useEffect(() => {
+    if (targetKey === NEW_ORDER) {
+      setDraftLines([])
       return
     }
-    setSelectedOrderId((prev) =>
-      prev && editOrders.some((o) => o.id === prev) ? prev : editOrders[0]!.id,
-    )
-  }, [mode, editOrders])
-
-  useEffect(() => {
-    if (mode !== 'edit' || !selectedOrderId || editOrders.length === 0) return
-    const o = editOrders.find((x) => x.id === selectedOrderId)
-    if (!o) return
-    setOrderId(selectedOrderId)
-    setLines(o.lines.map((l) => ({ ...l })))
-  }, [mode, selectedOrderId, editOrders])
+    const o = existingOrders.find((x) => x.id === targetKey)
+    if (o) setDraftLines(safeOrderLines(o))
+  }, [targetKey, existingOrders])
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -115,98 +108,84 @@ export function StaffTableOrderModal({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) onClose()
+      if (e.key === 'Escape' && !saving) onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [busy, onClose])
+  }, [saving, onClose])
 
-  const onPickOrder = (orderIdPick: string) => {
-    const o = editOrders.find((x) => x.id === orderIdPick)
-    if (!o) return
-    setSelectedOrderId(orderIdPick)
-    setOrderId(orderIdPick)
-    setLines(o.lines.map((l) => ({ ...l })))
+  const handleSend = async () => {
     setError(null)
-  }
+    const total = totalOf(draftLines)
 
-  const persist = useCallback(
-    async (nextLines: OrderLine[], currentOrderId: string | null): Promise<string | null> => {
-      const tot = totalOf(nextLines)
-      if (mode === 'add') {
-        if (nextLines.length === 0) {
-          if (currentOrderId) await deleteOrderById(businessId, currentOrderId)
-          return null
-        }
-        if (!currentOrderId) {
-          return await submitOrder(businessId, {
-            tableNumber,
-            lines: nextLines,
-            totalTry: tot,
-          })
-        }
-        await updateOrder(businessId, currentOrderId, { lines: nextLines, totalTry: tot })
-        return currentOrderId
+    if (isNew) {
+      if (draftLines.length === 0) {
+        setError('Göndermek için en az bir ürün seçin.')
+        return
       }
-
-      const sid = selectedOrderId
-      if (!sid) throw new Error('Sipariş seçilmedi.')
-      if (nextLines.length === 0) {
-        await deleteOrderById(businessId, sid)
-        return null
+      setSaving(true)
+      try {
+        await submitOrder(businessId, {
+          tableNumber,
+          lines: draftLines,
+          totalTry: total,
+        })
+        await onSaved()
+        onClose()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Sipariş gönderilemedi.')
+      } finally {
+        setSaving(false)
       }
-      await updateOrder(businessId, sid, { lines: nextLines, totalTry: tot })
-      return sid
-    },
-    [businessId, mode, selectedOrderId, tableNumber],
-  )
+      return
+    }
 
-  const runChange = async (nextLines: OrderLine[]) => {
-    setBusy(true)
-    setError(null)
+    if (!activeOrder) {
+      setError('Sipariş bulunamadı.')
+      return
+    }
+
+    setSaving(true)
     try {
-      if (mode === 'edit' && !selectedOrderId) return
-
-      const oid = mode === 'add' ? orderId : selectedOrderId
-      const newId = await persist(nextLines, oid)
-
-      if (mode === 'add') {
-        setOrderId(newId)
-        if (nextLines.length === 0) setLines([])
-        else setLines(nextLines)
+      if (draftLines.length === 0) {
+        await deleteOrderById(businessId, activeOrder.id)
       } else {
-        if (nextLines.length === 0) {
-          setLines([])
-          await onSaved()
-          onClose()
-          return
-        }
-        setLines(nextLines)
+        await updateOrder(businessId, activeOrder.id, {
+          lines: draftLines,
+          totalTry: total,
+        })
       }
-
       await onSaved()
+      onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Kaydedilemedi.')
+      setError(e instanceof Error ? e.message : 'Kayıt başarısız.')
     } finally {
-      setBusy(false)
+      setSaving(false)
     }
   }
 
   const onPlus = (itemId: string, name: string, price: number) => {
-    if (busy) return
-    if (mode === 'edit' && !selectedOrderId) return
-    void runChange(addQtyToLines(lines, itemId, name, price))
+    if (saving) return
+    setDraftLines((prev) => addQtyToLines(prev, itemId, name, price))
   }
 
   const onMinus = (itemId: string) => {
-    if (busy) return
-    const cur = lines.find((l) => l.key === itemId)?.qty ?? 0
-    if (cur <= 0) return
-    void runChange(removeQtyFromLines(lines, itemId))
+    if (saving) return
+    setDraftLines((prev) => {
+      const cur = prev.find((l) => l.key === itemId)?.qty ?? 0
+      if (cur <= 0) return prev
+      return removeQtyFromLines(prev, itemId)
+    })
   }
 
-  const lineTotal = totalOf(lines)
-  const showOrderPick = mode === 'edit' && editOrders.length > 1
+  const lineTotal = totalOf(draftLines)
+  const showTargetPick = existingOrders.length > 0
+  const canSend = isNew ? draftLines.length > 0 : Boolean(activeOrder)
+  const sendDisabled = saving || !canSend || menuLoading || !menuConfigured
+
+  if (typeof document === 'undefined' || !document.body) {
+    return null
+  }
 
   return createPortal(
     <div className={styles.root}>
@@ -214,9 +193,9 @@ export function StaffTableOrderModal({
         type="button"
         className={styles.backdrop}
         aria-label="Kapat"
-        disabled={busy}
+        disabled={saving}
         onClick={() => {
-          if (!busy) onClose()
+          if (!saving) onClose()
         }}
       />
       <div
@@ -229,41 +208,48 @@ export function StaffTableOrderModal({
         <div className={styles.header}>
           <div className={styles.titleBlock}>
             <h2 className={styles.title} id={titleId}>
-              {mode === 'add' ? 'Sipariş ekle' : 'Sipariş düzenle'}
+              Sipariş ekle / düzenle
             </h2>
             <p className={styles.subtitle}>
-              {tableLabel}
-              {mode === 'edit' && selectedOrderId
-                ? ` · ${formatWhen(editOrders.find((o) => o.id === selectedOrderId)?.createdAt ?? '')}`
-                : null}
+              <span className={styles.tableTag}>{tableLabel}</span>
+              {!isNew && activeOrder ? (
+                <span className={styles.metaMuted}>
+                  {' '}
+                  · {formatWhen(activeOrder.createdAt)}
+                </span>
+              ) : null}
             </p>
           </div>
           <button
             type="button"
             className={styles.closeBtn}
             aria-label="Kapat"
-            disabled={busy}
+            disabled={saving}
             onClick={onClose}
           >
             ✕
           </button>
         </div>
 
-        {showOrderPick ? (
+        {showTargetPick ? (
           <div className={styles.orderPick}>
-            <label className={styles.orderPickLabel} htmlFor={`${titleId}-ord`}>
-              Hangi sipariş?
+            <label className={styles.orderPickLabel} htmlFor={`${titleId}-target`}>
+              Ne yapmak istersiniz?
             </label>
             <select
-              id={`${titleId}-ord`}
+              id={`${titleId}-target`}
               className={styles.select}
-              value={selectedOrderId ?? ''}
-              disabled={busy}
-              onChange={(e) => onPickOrder(e.target.value)}
+              value={targetKey}
+              disabled={saving}
+              onChange={(e) => {
+                setTargetKey(e.target.value)
+                setError(null)
+              }}
             >
-              {editOrders.map((o) => (
+              <option value={NEW_ORDER}>Yeni sipariş oluştur</option>
+              {existingOrders.map((o) => (
                 <option key={o.id} value={o.id}>
-                  {formatWhen(o.createdAt)} — {formatPriceTry(o.totalTry)}
+                  Mevcut: {formatWhen(o.createdAt)} — {formatPriceTry(o.totalTry)}
                 </option>
               ))}
             </select>
@@ -272,8 +258,14 @@ export function StaffTableOrderModal({
 
         <div className={styles.body}>
           <p className={styles.hint}>
-            Ürün yanındaki <strong>+</strong> her dokunuşta siparişe hemen eklenir ve kaydedilir; ayrı bir
-            sepet adımı yok.
+            Menüden ürün ve adet seçin; kayıt alttaki <strong>Gönder</strong> ile sunucuya gider.
+            {showTargetPick ? (
+              <>
+                {' '}
+                Mevcut bir siparişi seçtiyseniz değişiklikler o kayda yazılır; tüm ürünleri kaldırırsanız o
+                sipariş <strong>silinir</strong>.
+              </>
+            ) : null}
           </p>
           {menuError ? <p className={styles.error}>{menuError}</p> : null}
           {menuLoading ? <p className={styles.loadingMenu}>Menü yükleniyor…</p> : null}
@@ -289,7 +281,7 @@ export function StaffTableOrderModal({
                   </h3>
                   <ul className={styles.list}>
                     {category.items.map((item) => {
-                      const qty = lines.find((l) => l.key === item.id)?.qty ?? 0
+                      const qty = draftLines.find((l) => l.key === item.id)?.qty ?? 0
                       return (
                         <li key={item.id} className={styles.item}>
                           {item.imageUrl ? (
@@ -297,8 +289,8 @@ export function StaffTableOrderModal({
                               src={item.imageUrl}
                               alt=""
                               className={styles.thumb}
-                              width={44}
-                              height={44}
+                              width={56}
+                              height={56}
                             />
                           ) : (
                             <div className={styles.thumbPh} aria-hidden />
@@ -306,9 +298,11 @@ export function StaffTableOrderModal({
                           <div className={styles.itemInfo}>
                             <div className={styles.itemMain}>
                               <span className={styles.itemName}>{item.name}</span>
-                              <span className={styles.itemPrice}>{formatPriceTry(item.price)}</span>
+                              <span className={styles.itemPrice}>
+                                {formatPriceTry(Number.isFinite(item.price) ? item.price : 0)}
+                              </span>
                             </div>
-                            {item.description.trim() ? (
+                            {(item.description ?? '').trim() ? (
                               <p className={styles.itemDesc}>{item.description}</p>
                             ) : null}
                           </div>
@@ -317,7 +311,7 @@ export function StaffTableOrderModal({
                               type="button"
                               className={styles.qtyBtn}
                               aria-label={`${item.name} azalt`}
-                              disabled={busy || qty === 0}
+                              disabled={saving || qty === 0}
                               onClick={() => onMinus(item.id)}
                             >
                               −
@@ -327,7 +321,7 @@ export function StaffTableOrderModal({
                               type="button"
                               className={styles.qtyBtn}
                               aria-label={`${item.name} ekle`}
-                              disabled={busy || (mode === 'edit' && !selectedOrderId)}
+                              disabled={saving}
                               onClick={() => onPlus(item.id, item.name, item.price)}
                             >
                               +
@@ -343,10 +337,40 @@ export function StaffTableOrderModal({
         </div>
 
         <div className={styles.footer}>
-          <div>
-            <div className={styles.totalLabel}>Bu sipariş</div>
-            <div className={styles.totalVal}>{formatPriceTry(lineTotal)}</div>
+          {draftLines.length > 0 ? (
+            <ul className={styles.draftList} aria-label="Taslak sipariş">
+              {draftLines.map((l) => (
+                <li key={l.key} className={styles.draftRow}>
+                  <span className={styles.draftName}>
+                    {l.name} <span className={styles.draftQty}>×{l.qty}</span>
+                  </span>
+                  <span className={styles.draftSum}>{formatPriceTry(l.price * l.qty)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.draftEmpty}>
+              {isNew
+                ? 'Henüz ürün seçilmedi.'
+                : 'Liste boş — gönderirseniz bu sipariş silinir.'}
+            </p>
+          )}
+
+          <div className={styles.footerTotals}>
+            <div>
+              <div className={styles.totalLabel}>Ara toplam</div>
+              <div className={styles.totalVal}>{formatPriceTry(lineTotal)}</div>
+            </div>
+            <button
+              type="button"
+              className={styles.submitBtn}
+              disabled={sendDisabled}
+              onClick={() => void handleSend()}
+            >
+              {saving ? 'Gönderiliyor…' : 'Gönder'}
+            </button>
           </div>
+
           {error ? (
             <p className={styles.error} role="alert">
               {error}
