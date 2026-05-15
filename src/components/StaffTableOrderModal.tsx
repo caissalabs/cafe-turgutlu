@@ -78,12 +78,14 @@ export function StaffTableOrderModal({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (mode === 'add') {
-      setSelectedOrderId(null)
-      setOrderId(null)
-      setLines([])
-      return
-    }
+    if (mode !== 'add') return
+    setSelectedOrderId(null)
+    setOrderId(null)
+    setLines([])
+  }, [mode])
+
+  useEffect(() => {
+    if (mode !== 'edit') return
     if (editOrders.length === 0) {
       setSelectedOrderId(null)
       setOrderId(null)

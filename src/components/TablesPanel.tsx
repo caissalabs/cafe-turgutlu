@@ -12,6 +12,9 @@ import type { CafeOrder } from '@/types/order'
 import { cn } from '@/utils/cn'
 import styles from './TablesPanel.module.css'
 
+/** Sipariş ekle modunda `editOrders` için sabit dizi — her render'da `[]` vermek effect'i sonsuz tetikler. */
+const STAFF_ORDER_MODAL_EDIT_EMPTY: CafeOrder[] = []
+
 type TablesPanelProps = {
   businessId: string | null
   orders: CafeOrder[]
@@ -98,7 +101,7 @@ export function TablesPanel({
           tableNumber={staffOrderModal.tableId}
           tableLabel={names.get(staffOrderModal.tableId) ?? `Masa ${staffOrderModal.tableId}`}
           mode={staffOrderModal.mode}
-          editOrders={staffOrderModal.mode === 'edit' ? staffOrderModal.orders : []}
+          editOrders={staffOrderModal.mode === 'edit' ? staffOrderModal.orders : STAFF_ORDER_MODAL_EDIT_EMPTY}
           onClose={() => setStaffOrderModal(null)}
           onSaved={onOrdersRefresh}
         />
