@@ -6,6 +6,26 @@
   padding-bottom: 5.5rem;
 }
 
+/* Müşteri: yalnızca kısa durum metni (mobil) */
+.publicMinimal {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  background: var(--bg);
+}
+
+.publicMinimalMessage {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  text-align: center;
+  color: var(--text);
+  max-width: 24rem;
+}
+
 .staff {
   min-height: 0;
 }

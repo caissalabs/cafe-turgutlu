@@ -4,8 +4,11 @@
 -- Varsayılan işletme UUID (QR ve .env ile kullanılabilir):
 --   a0000000-0000-4000-8000-000000000001
 -- İlk admin: kullanıcı adı admin, şifre 123 (üretimde mutlaka değiştirin).
+--
+-- Supabase: pgcrypto "extensions" şemasındadır. security definer fonksiyonlarda
+-- yalnızca search_path=public kullanılırsa crypt() bulunamaz (42883).
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 -- ── İşletme ve yönetici hesabı ──
 create table if not exists public.businesses (
@@ -45,7 +48,7 @@ create or replace function public.login_business(p_slug text, p_username text, p
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_bid uuid;
@@ -55,7 +58,7 @@ begin
   from public.business_users bu
   inner join public.businesses b on b.id = bu.business_id
   where b.slug = lower(trim(p_slug))
-    and bu.username = lower(trim(p_username));
+    and lower(trim(bu.username)) = lower(trim(p_username));
   if v_bid is null then
     return null;
   end if;
@@ -92,7 +95,7 @@ create or replace function public.register_business(
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_id uuid;

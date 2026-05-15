@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { NewOrderAlertModal } from '@/components/NewOrderAlertModal'
 import { TablesPanel } from '@/components/TablesPanel'
@@ -8,6 +9,17 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useNewOrderAttention } from '@/hooks/useNewOrderAttention'
 import { useOrders } from '@/hooks/useOrders'
 import styles from './AdminHomePage.module.css'
+
+const SAMPLE_TABLE_NUMBERS = [1, 2, 3] as const
+
+function menuUrlsForTables(origin: string, businessId: string) {
+  return SAMPLE_TABLE_NUMBERS.map((n) => {
+    const u = new URL('/menu', origin)
+    u.searchParams.set('business', businessId)
+    u.searchParams.set('masa', String(n))
+    return { table: n, href: u.toString() }
+  })
+}
 
 export function AdminHomePage() {
   useDocumentTitle('Cafe Turgutlu — Yönetim paneli')
@@ -24,6 +36,11 @@ export function AdminHomePage() {
     refreshTables: cafe.refreshTables,
   })
 
+  const qrLinks = useMemo(() => {
+    if (!businessId || typeof window === 'undefined') return []
+    return menuUrlsForTables(window.location.origin, businessId)
+  }, [businessId])
+
   return (
     <section className={styles.stack}>
       <NewOrderAlertModal
@@ -39,11 +56,20 @@ export function AdminHomePage() {
         </div>
       ) : null}
       <h1>Yönetim paneli</h1>
-      {businessId ? (
-        <p className={styles.hint} style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>
-          İşletme kimliği: <code>{businessId}</code> — QR menü bağlantısında{' '}
-          <code>?business={businessId}</code> veya <code>?isletme=…</code> kullanın.
-        </p>
+      {qrLinks.length > 0 ? (
+        <div className={styles.qrBlock}>
+          <p className={styles.qrBlockTitle}>Menü bağlantıları (QR için)</p>
+          <ul className={styles.qrList}>
+            {qrLinks.map(({ table, href }) => (
+              <li key={table} className={styles.qrRow}>
+                <span className={styles.qrLabel}>Masa {table}</span>
+                <a className={styles.qrLink} href={href} target="_blank" rel="noopener noreferrer">
+                  {href}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
       {error ? (
         <p className={styles.err} role="alert">

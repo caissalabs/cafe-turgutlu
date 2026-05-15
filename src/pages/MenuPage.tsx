@@ -20,6 +20,15 @@ export type MenuPageProps = {
 
 type Step = 'loading' | 'existing-check' | 'menu' | 'cart'
 
+/** Müşteri menüsü: tek satır, sade ekran */
+function PublicStatusLine({ text }: { text: string }) {
+  return (
+    <div className={styles.publicMinimal} role="status">
+      <p className={styles.publicMinimalMessage}>{text}</p>
+    </div>
+  )
+}
+
 function formatWhen(iso: string): string {
   try {
     return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short', timeStyle: 'short' }).format(
@@ -150,59 +159,13 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   if (!staff) {
     if (publicBizResolving) {
-      return (
-        <div className={styles.page}>
-          <header className={styles.header}>
-            <div className={styles.headerInner}>
-              <span className={styles.brand}>Cafe Turgutlu</span>
-            </div>
-          </header>
-          <main className={styles.main}>
-            <p className={styles.loadingText}>Menü bağlantısı doğrulanıyor…</p>
-          </main>
-          <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
-        </div>
-      )
+      return <PublicStatusLine text="Yükleniyor…" />
     }
-    if (publicBizError) {
-      return (
-        <div className={styles.page}>
-          <header className={styles.header}>
-            <div className={styles.headerInner}>
-              <span className={styles.brand}>Cafe Turgutlu</span>
-            </div>
-          </header>
-          <main className={styles.main}>
-            <div className={styles.qrGate}>
-              <h1 className={styles.title}>Menü kullanılamıyor</h1>
-              <p className={styles.qrGateText}>{publicBizError}</p>
-            </div>
-          </main>
-          <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
-        </div>
-      )
+    if (publicBizError || !menuBusinessId) {
+      return <PublicStatusLine text="Link geçersiz." />
     }
-    if (!menuBusinessId) {
-      return (
-        <div className={styles.page}>
-          <header className={styles.header}>
-            <div className={styles.headerInner}>
-              <span className={styles.brand}>Cafe Turgutlu</span>
-            </div>
-          </header>
-          <main className={styles.main}>
-            <div className={styles.qrGate}>
-              <h1 className={styles.title}>Menü bağlantısı geçersiz</h1>
-              <p className={styles.qrGateText}>
-                Bu sayfayı açmak için masanızdaki QR kodundaki adresi kullanın. Bağlantıda{' '}
-                <strong>?isletme=kod</strong> veya <strong>?business=işletme-uuid</strong> parametresi
-                olmalıdır.
-              </p>
-            </div>
-          </main>
-          <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
-        </div>
-      )
+    if (!menuLoading && (!menuConfigured || menuFetchError)) {
+      return <PublicStatusLine text="Şu anda bu işletmenin menüsü aktif değil." />
     }
   }
 
@@ -230,16 +193,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   /* ── Yükleniyor ── */
   if (!staff && step === 'loading') {
-    return (
-      <div className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.headerInner}><span className={styles.brand}>Cafe Turgutlu</span></div>
-        </header>
-        <main className={styles.main}>
-          <p className={styles.loadingText}>Yükleniyor…</p>
-        </main>
-      </div>
-    )
+    return <PublicStatusLine text="Yükleniyor…" />
   }
 
   /* ── Mevcut sipariş kontrolü ── */
@@ -422,7 +376,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
           {menuConfigured ? 'Ürünlerimiz' : staff ? 'Menü henüz yapılandırılmadı' : 'Menü hazırlanıyor'}
         </p>
 
-        {menuFetchError ? (
+        {staff && menuFetchError ? (
           <p className={styles.submitError} role="alert">
             {menuFetchError}
           </p>
@@ -430,21 +384,12 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
         {menuLoading ? <p className={styles.loadingText}>Menü yükleniyor…</p> : null}
 
-        {!menuLoading && !menuConfigured ? (
+        {staff && !menuLoading && !menuConfigured ? (
           <div className={styles.menuEmpty}>
-            {staff ? (
-              <>
-                <p>Müşteri menüsünde gösterilecek ürün yok. Önce menünüzü oluşturun.</p>
-                <Link to="/home/menu" className={styles.menuEmptyLink}>
-                  Menüyü ayarla
-                </Link>
-              </>
-            ) : (
-              <p>
-                Menümüz şu anda güncelleniyor. Lütfen bir süre sonra tekrar deneyin veya personelden bilgi
-                alın.
-              </p>
-            )}
+            <p>Müşteri menüsünde gösterilecek ürün yok. Önce menünüzü oluşturun.</p>
+            <Link to="/home/menu" className={styles.menuEmptyLink}>
+              Menüyü ayarla
+            </Link>
           </div>
         ) : null}
 
