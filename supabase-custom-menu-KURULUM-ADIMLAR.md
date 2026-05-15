@@ -33,9 +33,11 @@ Görselleri uygulamada kullanacaksanız bucket şart.
 
 ---
 
-## Adım 3 — Storage erişim politikaları (zorunlu — genelde SQL ile değil, arayüzden)
+## Adım 3 — Storage erişim politikaları (zorunlu)
 
-`storage.objects` üzerinde policy eklerken SQL Editor bazen **“must be owner of table objects”** verir. Bu yüzden politikaları **Storage** ekranından ekleyin.
+**Önerilen (hızlı):** SQL Editor’de `supabase-storage-menu-images-policies.sql` dosyasının tamamını çalıştırın. Bu, otomatik görsel yüklemesi için gerekli `storage.objects` politikalarını ekler.
+
+**Alternatif:** Aşağıdaki gibi politikaları **Storage → Policies** ekranından da ekleyebilirsiniz. SQL Editor’de **“must be owner of table objects”** alırsanız arayüzü kullanın.
 
 1. **Storage** → **Policies** (veya `menu-images` bucket → **Policies**)
 2. **menu-images** için aşağıdaki mantıkta policy’ler oluşturun (isimler sizde farklı olabilir):

@@ -392,7 +392,19 @@ export async function uploadMenuItemImage(businessId: string, file: File): Promi
       upsert: false,
       contentType: file.type,
     })
-    if (error) throw error
+    if (error) {
+      const msg = error.message ?? ''
+      if (
+        msg.toLowerCase().includes('row-level security') ||
+        msg.toLowerCase().includes('rls') ||
+        (error as { code?: string }).code === '42501'
+      ) {
+        throw new Error(
+          'Görsel yüklenemedi: Supabase Storage izni yok. SQL Editor’de supabase-storage-menu-images-policies.sql dosyasını çalıştırın veya menu-images bucket için anon/authenticated INSERT politikası ekleyin.',
+        )
+      }
+      throw error
+    }
     const { data } = supabase.storage.from('menu-images').getPublicUrl(path)
     return data.publicUrl
   }
