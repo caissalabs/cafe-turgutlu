@@ -2,13 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { formatPriceTry } from '@/constants/menu'
-import { CAFE_TABLES, type CafeTable, canonicalTableName, tableDisplayLabel } from '@/constants/tables'
 import { useAuth } from '@/hooks/useAuth'
 import { clearMasaSession, useMasaNumber } from '@/hooks/useMasaNumber'
 import { useCafeMenu } from '@/hooks/useCafeMenu'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { usePublicBusinessId } from '@/hooks/usePublicBusinessId'
-import { fetchTableNames } from '@/services/tableRepository'
 import { fetchOrdersByTable, submitOrder } from '@/services/orderRepository'
 import type { CafeOrder, OrderLine } from '@/types/order'
 import { cn } from '@/utils/cn'
@@ -47,8 +45,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
     usePublicBusinessId()
   const menuBusinessId = staff ? authBusinessId : publicBusinessId
 
-  const masaOpts = staff ? undefined : { source: 'url-only' as const }
-  const { masa, setMasa, hasMasa } = useMasaNumber(masaOpts)
+  const { masa, hasMasa } = useMasaNumber({ source: 'url-only' })
 
   useDocumentTitle(staff ? 'Cafe Turgutlu — Menü (yönetim)' : 'Cafe Turgutlu — Menü')
 
@@ -58,24 +55,6 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
     isConfigured: menuConfigured,
     error: menuFetchError,
   } = useCafeMenu(menuBusinessId)
-
-  /* ── Personel: masa listesi ── */
-  const [staffTables, setStaffTables] = useState<CafeTable[]>(() => [...CAFE_TABLES])
-  useEffect(() => {
-    if (!staff || !authBusinessId) return
-    void fetchTableNames(authBusinessId).then((rows) => {
-      if (rows.length > 0) {
-        setStaffTables(
-          rows.map((r) => ({
-            id: r.id,
-            name: canonicalTableName(r.id),
-            nickname: r.nickname,
-            lastOrderAttentionClearedAt: r.lastOrderAttentionClearedAt,
-          })),
-        )
-      }
-    })
-  }, [staff, authBusinessId])
 
   /* ── Adım ── */
   const [step, setStep] = useState<Step>(staff ? 'menu' : 'loading')
@@ -259,7 +238,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
   }
 
   /* ── Sepet adımı ── */
-  if (step === 'cart') {
+  if (step === 'cart' && !staff) {
     return (
       <div className={cn(styles.page, staff && styles.staff)}>
         {!staff ? (
@@ -347,7 +326,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   /* ── Menü adımı ── */
   return (
-    <div className={cn(styles.page, staff && styles.staff)}>
+    <div className={cn(styles.page, staff && styles.staff, staff && styles.pagePreview)}>
       {!staff ? (
         <header className={styles.header}>
           <div className={styles.headerInner}>
@@ -360,20 +339,19 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
           <Link to="/home/menu" className={styles.backLink}>
             ← Menü yönetimine dön
           </Link>
-          <div className={styles.staffToolbarMeta}>
-            {hasMasa ? (
-              <span className={styles.masaBadge}>Masa {masa}</span>
-            ) : (
-              <span className={styles.masaWarn}>Masa seçilmedi</span>
-            )}
-          </div>
         </div>
       )}
 
       <main className={styles.main}>
         <h1 className={styles.title}>Menü</h1>
         <p className={styles.subtitle}>
-          {menuConfigured ? 'Ürünlerimiz' : staff ? 'Menü henüz yapılandırılmadı' : 'Menü hazırlanıyor'}
+          {staff
+            ? menuConfigured
+              ? 'Müşteri ekranında böyle görünür. Sipariş eklemek için Masalar’daki ⋮ menüsünü kullanın.'
+              : 'Menü henüz yapılandırılmadı'
+            : menuConfigured
+              ? 'Ürünlerimiz'
+              : 'Menü hazırlanıyor'}
         </p>
 
         {staff && menuFetchError ? (
@@ -395,31 +373,6 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
         {!menuLoading && menuConfigured ? (
           <>
-            {staff ? (
-              <div className={styles.masaRow}>
-                <label htmlFor="masa-select" className={styles.masaLabel}>
-                  Masa numarası (QR yoksa)
-                </label>
-                <select
-                  id="masa-select"
-                  className={styles.masaSelect}
-                  value={masa ?? ''}
-                  onChange={(ev) => {
-                    const v = ev.target.value
-                    if (v === '') return
-                    setMasa(Number.parseInt(v, 10))
-                  }}
-                >
-                  <option value="">Seçin…</option>
-                  {staffTables.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {tableDisplayLabel(t)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-
             <div className={styles.categories}>
               {menuCategories.map((category) => (
                 <section key={category.id} aria-labelledby={`menu-${category.id}`}>
@@ -460,28 +413,30 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
                               </ul>
                             ) : null}
                           </div>
-                          <div className={styles.itemActions}>
-                            <button
-                              type="button"
-                              className={styles.qtyBtn}
-                              aria-label={`${item.name} eksilt`}
-                              onClick={() => removeOne(item.id)}
-                              disabled={qty === 0}
-                            >
-                              −
-                            </button>
-                            <span className={styles.qtyVal} aria-live="polite">
-                              {qty}
-                            </span>
-                            <button
-                              type="button"
-                              className={styles.qtyBtn}
-                              aria-label={`${item.name} ekle`}
-                              onClick={() => addOne(item.id, item.name, item.price)}
-                            >
-                              +
-                            </button>
-                          </div>
+                          {!staff ? (
+                            <div className={styles.itemActions}>
+                              <button
+                                type="button"
+                                className={styles.qtyBtn}
+                                aria-label={`${item.name} eksilt`}
+                                onClick={() => removeOne(item.id)}
+                                disabled={qty === 0}
+                              >
+                                −
+                              </button>
+                              <span className={styles.qtyVal} aria-live="polite">
+                                {qty}
+                              </span>
+                              <button
+                                type="button"
+                                className={styles.qtyBtn}
+                                aria-label={`${item.name} ekle`}
+                                onClick={() => addOne(item.id, item.name, item.price)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : null}
                         </li>
                       )
                     })}
@@ -495,24 +450,25 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
       {!staff ? <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer> : null}
 
-      {/* Alt bar: boşsa "Sepet boş", doluysa "Sepete git (N ürün)" */}
-      <div className={styles.cartBar} role="region" aria-label="Sepet">
-        <div className={styles.cartInner}>
-          <div className={styles.cartSummary}>
-            <span className={styles.cartLabel}>
-              {cartItemCount > 0 ? `${cartItemCount} ürün seçildi` : 'Sepet boş'}
-            </span>
-            {cartTotal > 0 && <span className={styles.cartTotal}>{formatPriceTry(cartTotal)}</span>}
+      {!staff ? (
+        <div className={styles.cartBar} role="region" aria-label="Sepet">
+          <div className={styles.cartInner}>
+            <div className={styles.cartSummary}>
+              <span className={styles.cartLabel}>
+                {cartItemCount > 0 ? `${cartItemCount} ürün seçildi` : 'Sepet boş'}
+              </span>
+              {cartTotal > 0 && <span className={styles.cartTotal}>{formatPriceTry(cartTotal)}</span>}
+            </div>
+            <Button
+              type="button"
+              disabled={cartLines.length === 0 || !hasMasa || !menuConfigured}
+              onClick={() => setStep('cart')}
+            >
+              Sepete git
+            </Button>
           </div>
-          <Button
-            type="button"
-            disabled={cartLines.length === 0 || !hasMasa || !menuConfigured}
-            onClick={() => setStep('cart')}
-          >
-            Sepete git
-          </Button>
         </div>
-      </div>
+      ) : null}
     </div>
   )
 }

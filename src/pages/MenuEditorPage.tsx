@@ -186,7 +186,7 @@ export function MenuEditorPage() {
           Kategori ekle
         </button>
         <Link to="/home/menu/onizleme" className={styles.secondaryBtn}>
-          Menüyü önizle (sipariş dene)
+          Menüyü önizle
         </Link>
       </div>
 

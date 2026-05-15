@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { OrderPreparedModal } from '@/components/OrderPreparedModal'
+import { StaffTableOrderModal } from '@/components/StaffTableOrderModal'
 import { TableCardMenu } from '@/components/TableCardMenu'
 import { TableDetailModal } from '@/components/TableDetailModal'
 import { TableMasaIcon } from '@/components/TableMasaIcon'
@@ -41,6 +42,9 @@ export function TablesPanel({
   const [preparedTableId, setPreparedTableId] = useState<number | null>(null)
   const [detailTableId, setDetailTableId] = useState<number | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
+  const [staffOrderModal, setStaffOrderModal] = useState<
+    null | { tableId: number; mode: 'add' | 'edit'; orders: CafeOrder[] }
+  >(null)
 
   const byTable = useMemo(() => {
     const map = new Map<number, CafeOrder[]>()
@@ -87,6 +91,18 @@ export function TablesPanel({
           onClose={() => setDetailTableId(null)}
         />
       )}
+
+      {staffOrderModal != null && businessId ? (
+        <StaffTableOrderModal
+          businessId={businessId}
+          tableNumber={staffOrderModal.tableId}
+          tableLabel={names.get(staffOrderModal.tableId) ?? `Masa ${staffOrderModal.tableId}`}
+          mode={staffOrderModal.mode}
+          editOrders={staffOrderModal.mode === 'edit' ? staffOrderModal.orders : []}
+          onClose={() => setStaffOrderModal(null)}
+          onSaved={onOrdersRefresh}
+        />
+      ) : null}
 
       <h2 className={styles.heading}>Masalar ve siparişler</h2>
       <p className={styles.hint}>
@@ -141,7 +157,28 @@ export function TablesPanel({
                     await removeTable(table.id)
                     void onClearTableAttention(table.id)
                     setDetailTableId((cur) => (cur === table.id ? null : cur))
+                    setStaffOrderModal((cur) => (cur?.tableId === table.id ? null : cur))
                   }}
+                  onStaffAddOrder={
+                    businessId
+                      ? () =>
+                          setStaffOrderModal({
+                            tableId: table.id,
+                            mode: 'add',
+                            orders: [],
+                          })
+                      : undefined
+                  }
+                  onStaffEditOrder={
+                    businessId
+                      ? () =>
+                          setStaffOrderModal({
+                            tableId: table.id,
+                            mode: 'edit',
+                            orders: tableOrders,
+                          })
+                      : undefined
+                  }
                 />
               </div>
 

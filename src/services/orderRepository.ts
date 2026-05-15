@@ -118,26 +118,74 @@ export async function submitOrder(
     lines: OrderLine[]
     totalTry: number
   },
-): Promise<void> {
+): Promise<string> {
   if (supabase) {
-    const { error } = await supabase.from('cafe_orders').insert({
-      business_id: businessId,
-      table_number: input.tableNumber,
-      lines: input.lines,
-      total_try: input.totalTry,
-    })
+    const { data, error } = await supabase
+      .from('cafe_orders')
+      .insert({
+        business_id: businessId,
+        table_number: input.tableNumber,
+        lines: input.lines,
+        total_try: input.totalTry,
+      })
+      .select('id')
+      .single()
     if (error) throw error
-    return
+    return (data as { id: string }).id
   }
 
+  const id = crypto.randomUUID()
   const order: CafeOrder = {
-    id: crypto.randomUUID(),
+    id,
     tableNumber: input.tableNumber,
     lines: input.lines,
     totalTry: input.totalTry,
     createdAt: new Date().toISOString(),
   }
   writeLocalOrders(businessId, [order, ...readLocalOrders(businessId)])
+  return id
+}
+
+export async function updateOrder(
+  businessId: string,
+  orderId: string,
+  patch: { lines: OrderLine[]; totalTry: number },
+): Promise<void> {
+  if (supabase) {
+    const { error } = await supabase
+      .from('cafe_orders')
+      .update({ lines: patch.lines, total_try: patch.totalTry })
+      .eq('id', orderId)
+      .eq('business_id', businessId)
+    if (error) throw error
+    return
+  }
+  const orders = readLocalOrders(businessId)
+  const idx = orders.findIndex((o) => o.id === orderId)
+  if (idx === -1) throw new Error('Sipariş bulunamadı.')
+  const next = [...orders]
+  next[idx] = {
+    ...next[idx]!,
+    lines: patch.lines,
+    totalTry: patch.totalTry,
+  }
+  writeLocalOrders(businessId, next)
+}
+
+export async function deleteOrderById(businessId: string, orderId: string): Promise<void> {
+  if (supabase) {
+    const { error } = await supabase
+      .from('cafe_orders')
+      .delete()
+      .eq('id', orderId)
+      .eq('business_id', businessId)
+    if (error) throw error
+    return
+  }
+  writeLocalOrders(
+    businessId,
+    readLocalOrders(businessId).filter((o) => o.id !== orderId),
+  )
 }
 
 export function subscribeOrders(

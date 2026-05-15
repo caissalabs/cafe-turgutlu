@@ -34,6 +34,9 @@ type TableCardMenuProps = {
   onTransfer: (toTableId: number) => Promise<void>
   /** Siparişleri silip masa satırını kaldırır (üst bileşen uygular) */
   onDeleteTable: () => Promise<void>
+  /** Masalar ekranı: personel siparişi — modal */
+  onStaffAddOrder?: () => void
+  onStaffEditOrder?: () => void
 }
 
 export function TableCardMenu({
@@ -48,6 +51,8 @@ export function TableCardMenu({
   onSetNickname,
   onTransfer,
   onDeleteTable,
+  onStaffAddOrder,
+  onStaffEditOrder,
 }: TableCardMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [phase, setPhase] = useState<ModalPhase>('idle')
@@ -130,6 +135,17 @@ export function TableCardMenu({
     setMenuOpen(false)
     setErrorMsg(null)
     setPhase('confirm-delete-table')
+  }
+
+  const openStaffAddOrder = () => {
+    setMenuOpen(false)
+    onStaffAddOrder?.()
+  }
+
+  const openStaffEditOrder = () => {
+    if (orderCount === 0) return
+    setMenuOpen(false)
+    onStaffEditOrder?.()
   }
 
   const closeModal = () => {
@@ -379,6 +395,29 @@ export function TableCardMenu({
         </button>
         {menuOpen ? (
           <ul className={styles.menu} role="menu">
+            {onStaffAddOrder ? (
+              <li role="none">
+                <button type="button" role="menuitem" className={styles.menuItem} onClick={openStaffAddOrder}>
+                  Sipariş ekle
+                </button>
+              </li>
+            ) : null}
+            {onStaffEditOrder ? (
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.menuItem}
+                  disabled={orderCount === 0 || loading}
+                  onClick={openStaffEditOrder}
+                >
+                  Sipariş düzenle
+                </button>
+              </li>
+            ) : null}
+            {(onStaffAddOrder || onStaffEditOrder) ? (
+              <li className={styles.menuDivider} role="separator" />
+            ) : null}
             <li role="none">
               <button type="button" role="menuitem" className={styles.menuItem} onClick={openRename}>
                 Takma ad düzenle
