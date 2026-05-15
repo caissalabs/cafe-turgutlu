@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
-import { MENU_CATEGORIES, formatPriceTry } from '@/constants/menu'
+import { formatPriceTry } from '@/constants/menu'
 import { CAFE_TABLES, type CafeTable, canonicalTableName, tableDisplayLabel } from '@/constants/tables'
+import { useAuth } from '@/hooks/useAuth'
 import { clearMasaSession, useMasaNumber } from '@/hooks/useMasaNumber'
+import { useCafeMenu } from '@/hooks/useCafeMenu'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { usePublicBusinessId } from '@/hooks/usePublicBusinessId'
 import { fetchTableNames } from '@/services/tableRepository'
 import { fetchOrdersByTable, submitOrder } from '@/services/orderRepository'
 import type { CafeOrder, OrderLine } from '@/types/order'
@@ -16,10 +19,6 @@ export type MenuPageProps = {
 }
 
 type Step = 'loading' | 'existing-check' | 'menu' | 'cart'
-
-function lineKey(categoryId: string, itemName: string) {
-  return `${categoryId}::${itemName}`
-}
 
 function formatWhen(iso: string): string {
   try {
@@ -34,21 +33,40 @@ function formatWhen(iso: string): string {
 export function MenuPage({ variant = 'public' }: MenuPageProps) {
   const staff = variant === 'staff'
   const navigate = useNavigate()
+  const { businessId: authBusinessId } = useAuth()
+  const { businessId: publicBusinessId, resolving: publicBizResolving, error: publicBizError } =
+    usePublicBusinessId()
+  const menuBusinessId = staff ? authBusinessId : publicBusinessId
+
   const masaOpts = staff ? undefined : { source: 'url-only' as const }
   const { masa, setMasa, hasMasa } = useMasaNumber(masaOpts)
 
   useDocumentTitle(staff ? 'Cafe Turgutlu — Menü (yönetim)' : 'Cafe Turgutlu — Menü')
 
+  const {
+    categories: menuCategories,
+    loading: menuLoading,
+    isConfigured: menuConfigured,
+    error: menuFetchError,
+  } = useCafeMenu(menuBusinessId)
+
   /* ── Personel: masa listesi ── */
   const [staffTables, setStaffTables] = useState<CafeTable[]>(() => [...CAFE_TABLES])
   useEffect(() => {
-    if (!staff) return
-    void fetchTableNames().then((rows) => {
+    if (!staff || !authBusinessId) return
+    void fetchTableNames(authBusinessId).then((rows) => {
       if (rows.length > 0) {
-        setStaffTables(rows.map((r) => ({ id: r.id, name: canonicalTableName(r.id), nickname: r.nickname })))
+        setStaffTables(
+          rows.map((r) => ({
+            id: r.id,
+            name: canonicalTableName(r.id),
+            nickname: r.nickname,
+            lastOrderAttentionClearedAt: r.lastOrderAttentionClearedAt,
+          })),
+        )
       }
     })
-  }, [staff])
+  }, [staff, authBusinessId])
 
   /* ── Adım ── */
   const [step, setStep] = useState<Step>(staff ? 'menu' : 'loading')
@@ -56,9 +74,9 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   /* Müşteri: masa belli olunca mevcut sipariş kontrolü */
   useEffect(() => {
-    if (staff || !hasMasa || masa == null) return
+    if (staff || !hasMasa || masa == null || !menuBusinessId) return
     setStep('loading')
-    fetchOrdersByTable(masa)
+    fetchOrdersByTable(menuBusinessId, masa)
       .then((orders) => {
         if (orders.length > 0) {
           setExistingOrders(orders)
@@ -68,7 +86,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
         }
       })
       .catch(() => setStep('menu'))
-  }, [staff, hasMasa, masa])
+  }, [staff, hasMasa, masa, menuBusinessId])
 
   /* ── Sepet ── */
   const [cart, setCart] = useState<Record<string, OrderLine>>({})
@@ -79,11 +97,13 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
   const cartTotal = useMemo(() => cartLines.reduce((s, l) => s + l.price * l.qty, 0), [cartLines])
   const cartItemCount = useMemo(() => cartLines.reduce((s, l) => s + l.qty, 0), [cartLines])
 
-  const addOne = useCallback((categoryId: string, name: string, price: number) => {
-    const key = lineKey(categoryId, name)
+  const addOne = useCallback((itemId: string, name: string, price: number) => {
     setCart((prev) => {
-      const cur = prev[key]
-      return { ...prev, [key]: { key, name, price, qty: (cur?.qty ?? 0) + 1 } }
+      const cur = prev[itemId]
+      return {
+        ...prev,
+        [itemId]: { key: itemId, name, price, qty: (cur?.qty ?? 0) + 1 },
+      }
     })
   }, [])
 
@@ -98,11 +118,11 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
   }, [])
 
   const handleSubmit = async () => {
-    if (!hasMasa || masa == null || cartLines.length === 0) return
+    if (!menuBusinessId || !hasMasa || masa == null || cartLines.length === 0) return
     setSubmitting(true)
     setSubmitError(null)
     try {
-      await submitOrder({ tableNumber: masa, lines: cartLines, totalTry: cartTotal })
+      await submitOrder(menuBusinessId, { tableNumber: masa, lines: cartLines, totalTry: cartTotal })
       setCart({})
       if (!staff) {
         clearMasaSession()
@@ -115,6 +135,74 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
       setSubmitError(e instanceof Error ? e.message : 'Sipariş gönderilemedi.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  if (staff && !authBusinessId) {
+    return (
+      <div className={styles.page}>
+        <main className={styles.main}>
+          <p className={styles.loadingText}>Oturum yükleniyor…</p>
+        </main>
+      </div>
+    )
+  }
+
+  if (!staff) {
+    if (publicBizResolving) {
+      return (
+        <div className={styles.page}>
+          <header className={styles.header}>
+            <div className={styles.headerInner}>
+              <span className={styles.brand}>Cafe Turgutlu</span>
+            </div>
+          </header>
+          <main className={styles.main}>
+            <p className={styles.loadingText}>Menü bağlantısı doğrulanıyor…</p>
+          </main>
+          <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+        </div>
+      )
+    }
+    if (publicBizError) {
+      return (
+        <div className={styles.page}>
+          <header className={styles.header}>
+            <div className={styles.headerInner}>
+              <span className={styles.brand}>Cafe Turgutlu</span>
+            </div>
+          </header>
+          <main className={styles.main}>
+            <div className={styles.qrGate}>
+              <h1 className={styles.title}>Menü kullanılamıyor</h1>
+              <p className={styles.qrGateText}>{publicBizError}</p>
+            </div>
+          </main>
+          <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+        </div>
+      )
+    }
+    if (!menuBusinessId) {
+      return (
+        <div className={styles.page}>
+          <header className={styles.header}>
+            <div className={styles.headerInner}>
+              <span className={styles.brand}>Cafe Turgutlu</span>
+            </div>
+          </header>
+          <main className={styles.main}>
+            <div className={styles.qrGate}>
+              <h1 className={styles.title}>Menü bağlantısı geçersiz</h1>
+              <p className={styles.qrGateText}>
+                Bu sayfayı açmak için masanızdaki QR kodundaki adresi kullanın. Bağlantıda{' '}
+                <strong>?isletme=kod</strong> veya <strong>?business=işletme-uuid</strong> parametresi
+                olmalıdır.
+              </p>
+            </div>
+          </main>
+          <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer>
+        </div>
+      )
     }
   }
 
@@ -262,7 +350,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
                     <button
                       type="button"
                       className={styles.qtyBtn}
-                      onClick={() => addOne(line.key.split('::')[0]!, line.name, line.price)}
+                      onClick={() => addOne(line.key, line.name, line.price)}
                     >
                       +
                     </button>
@@ -315,7 +403,9 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
         </header>
       ) : (
         <div className={styles.staffToolbar}>
-          <Link to="/home" className={styles.backLink}>← Masalara dön</Link>
+          <Link to="/home/menu" className={styles.backLink}>
+            ← Menü yönetimine dön
+          </Link>
           <div className={styles.staffToolbarMeta}>
             {hasMasa ? (
               <span className={styles.masaBadge}>Masa {masa}</span>
@@ -328,74 +418,134 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
       <main className={styles.main}>
         <h1 className={styles.title}>Menü</h1>
-        <p className={styles.subtitle}>Yiyecek ve içeceklerimiz</p>
+        <p className={styles.subtitle}>
+          {menuConfigured ? 'Ürünlerimiz' : staff ? 'Menü henüz yapılandırılmadı' : 'Menü hazırlanıyor'}
+        </p>
 
-        {staff ? (
-          <div className={styles.masaRow}>
-            <label htmlFor="masa-select" className={styles.masaLabel}>
-              Masa numarası (QR yoksa)
-            </label>
-            <select
-              id="masa-select"
-              className={styles.masaSelect}
-              value={masa ?? ''}
-              onChange={(ev) => {
-                const v = ev.target.value
-                if (v === '') return
-                setMasa(Number.parseInt(v, 10))
-              }}
-            >
-              <option value="">Seçin…</option>
-              {staffTables.map((t) => (
-                <option key={t.id} value={t.id}>{tableDisplayLabel(t)}</option>
-              ))}
-            </select>
+        {menuFetchError ? (
+          <p className={styles.submitError} role="alert">
+            {menuFetchError}
+          </p>
+        ) : null}
+
+        {menuLoading ? <p className={styles.loadingText}>Menü yükleniyor…</p> : null}
+
+        {!menuLoading && !menuConfigured ? (
+          <div className={styles.menuEmpty}>
+            {staff ? (
+              <>
+                <p>Müşteri menüsünde gösterilecek ürün yok. Önce menünüzü oluşturun.</p>
+                <Link to="/home/menu" className={styles.menuEmptyLink}>
+                  Menüyü ayarla
+                </Link>
+              </>
+            ) : (
+              <p>
+                Menümüz şu anda güncelleniyor. Lütfen bir süre sonra tekrar deneyin veya personelden bilgi
+                alın.
+              </p>
+            )}
           </div>
         ) : null}
 
-        <div className={styles.categories}>
-          {MENU_CATEGORIES.map((category) => (
-            <section key={category.id} aria-labelledby={`menu-${category.id}`}>
-              <h2 className={styles.categoryTitle} id={`menu-${category.id}`}>
-                {category.title}
-              </h2>
-              <ul className={styles.list}>
-                {category.items.map((item) => {
-                  const key = lineKey(category.id, item.name)
-                  const qty = cart[key]?.qty ?? 0
-                  return (
-                    <li key={`${category.id}-${item.name}`} className={styles.item}>
-                      <div className={styles.itemMain}>
-                        <span className={styles.itemName}>{item.name}</span>
-                        <span className={styles.itemPrice}>{formatPriceTry(item.price)}</span>
-                      </div>
-                      <div className={styles.itemActions}>
-                        <button
-                          type="button"
-                          className={styles.qtyBtn}
-                          aria-label={`${item.name} eksilt`}
-                          onClick={() => removeOne(key)}
-                          disabled={qty === 0}
-                        >
-                          −
-                        </button>
-                        <span className={styles.qtyVal} aria-live="polite">{qty}</span>
-                        <button
-                          type="button"
-                          className={styles.qtyBtn}
-                          aria-label={`${item.name} ekle`}
-                          onClick={() => addOne(category.id, item.name, item.price)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          ))}
-        </div>
+        {!menuLoading && menuConfigured ? (
+          <>
+            {staff ? (
+              <div className={styles.masaRow}>
+                <label htmlFor="masa-select" className={styles.masaLabel}>
+                  Masa numarası (QR yoksa)
+                </label>
+                <select
+                  id="masa-select"
+                  className={styles.masaSelect}
+                  value={masa ?? ''}
+                  onChange={(ev) => {
+                    const v = ev.target.value
+                    if (v === '') return
+                    setMasa(Number.parseInt(v, 10))
+                  }}
+                >
+                  <option value="">Seçin…</option>
+                  {staffTables.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {tableDisplayLabel(t)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            <div className={styles.categories}>
+              {menuCategories.map((category) => (
+                <section key={category.id} aria-labelledby={`menu-${category.id}`}>
+                  <h2 className={styles.categoryTitle} id={`menu-${category.id}`}>
+                    {category.title}
+                  </h2>
+                  <ul className={styles.list}>
+                    {category.items.map((item) => {
+                      const qty = cart[item.id]?.qty ?? 0
+                      return (
+                        <li key={item.id} className={styles.item}>
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt=""
+                              className={styles.itemThumb}
+                              width={64}
+                              height={64}
+                            />
+                          ) : (
+                            <div className={styles.itemThumbPh} aria-hidden />
+                          )}
+                          <div className={styles.itemInfo}>
+                            <div className={styles.itemMain}>
+                              <span className={styles.itemName}>{item.name}</span>
+                              <span className={styles.itemPrice}>{formatPriceTry(item.price)}</span>
+                            </div>
+                            {item.description.trim() ? (
+                              <p className={styles.itemDesc}>{item.description}</p>
+                            ) : null}
+                            {item.allergens.length > 0 ? (
+                              <ul className={styles.allergenList}>
+                                {item.allergens.map((a) => (
+                                  <li key={a} className={styles.allergenTag}>
+                                    {a}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : null}
+                          </div>
+                          <div className={styles.itemActions}>
+                            <button
+                              type="button"
+                              className={styles.qtyBtn}
+                              aria-label={`${item.name} eksilt`}
+                              onClick={() => removeOne(item.id)}
+                              disabled={qty === 0}
+                            >
+                              −
+                            </button>
+                            <span className={styles.qtyVal} aria-live="polite">
+                              {qty}
+                            </span>
+                            <button
+                              type="button"
+                              className={styles.qtyBtn}
+                              aria-label={`${item.name} ekle`}
+                              onClick={() => addOne(item.id, item.name, item.price)}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </>
+        ) : null}
       </main>
 
       {!staff ? <footer className={styles.footer}>Cafe Turgutlu — Turgutlu</footer> : null}
@@ -411,7 +561,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
           </div>
           <Button
             type="button"
-            disabled={cartLines.length === 0 || !hasMasa}
+            disabled={cartLines.length === 0 || !hasMasa || !menuConfigured}
             onClick={() => setStep('cart')}
           >
             Sepete git

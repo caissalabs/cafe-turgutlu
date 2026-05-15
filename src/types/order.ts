@@ -17,6 +17,7 @@ export type CafeOrder = {
 /** Supabase satırı (PostgREST yanıtı) */
 export type CafeOrderRow = {
   id: string
+  business_id: string
   table_number: number
   lines: OrderLine[]
   total_try: number

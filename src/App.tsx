@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AuthProvider } from '@/contexts/AuthProvider'
 import { useAuth } from '@/hooks/useAuth'
+import { MenuEditorPage } from '@/pages/MenuEditorPage'
 import { AdminHomePage } from '@/pages/AdminHomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MenuPage } from '@/pages/MenuPage'
@@ -24,7 +25,8 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<Layout />}>
               <Route index element={<AdminHomePage />} />
-              <Route path="menu" element={<MenuPage variant="staff" />} />
+              <Route path="menu" element={<MenuEditorPage />} />
+              <Route path="menu/onizleme" element={<MenuPage variant="staff" />} />
             </Route>
           </Route>
           <Route path="/" element={<RootRedirect />} />

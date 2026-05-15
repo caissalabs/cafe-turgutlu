@@ -2,26 +2,39 @@ import { useCallback, useEffect, useState } from 'react'
 import type { CafeOrder } from '@/types/order'
 import { fetchAllOrders, subscribeOrders } from '@/services/orderRepository'
 
-export function useOrders() {
+export function useOrders(businessId: string | null) {
   const [orders, setOrders] = useState<CafeOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const refreshOrders = useCallback(async () => {
+    if (!businessId) {
+      setOrders([])
+      setError(null)
+      return
+    }
     try {
-      const list = await fetchAllOrders()
+      const list = await fetchAllOrders(businessId)
       setOrders(list)
       setError(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Siparişler yüklenemedi')
     }
-  }, [])
+  }, [businessId])
 
   useEffect(() => {
+    if (!businessId) {
+      setOrders([])
+      setLoading(false)
+      setError(null)
+      return
+    }
+
     let alive = true
+    setLoading(true)
     void (async () => {
       try {
-        const list = await fetchAllOrders()
+        const list = await fetchAllOrders(businessId)
         if (alive) {
           setOrders(list)
           setError(null)
@@ -35,7 +48,7 @@ export function useOrders() {
       }
     })()
 
-    const unsub = subscribeOrders((list) => {
+    const unsub = subscribeOrders(businessId, (list) => {
       if (alive) {
         setOrders(list)
         setError(null)
@@ -46,7 +59,7 @@ export function useOrders() {
       alive = false
       unsub()
     }
-  }, [])
+  }, [businessId])
 
   return { orders, loading, error, refreshOrders }
 }

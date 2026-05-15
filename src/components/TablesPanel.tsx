@@ -3,33 +3,44 @@ import { OrderPreparedModal } from '@/components/OrderPreparedModal'
 import { TableCardMenu } from '@/components/TableCardMenu'
 import { TableDetailModal } from '@/components/TableDetailModal'
 import { TableMasaIcon } from '@/components/TableMasaIcon'
+import type { CafeTable } from '@/constants/tables'
 import { MAX_TABLE_ID, MIN_TABLE_COUNT, tableDisplayLabel } from '@/constants/tables'
 import { formatPriceTry } from '@/constants/menu'
-import { useCafeTables } from '@/hooks/useCafeTables'
 import { deleteOrdersForTable, transferOrdersBetweenTables } from '@/services/orderRepository'
 import type { CafeOrder } from '@/types/order'
 import { cn } from '@/utils/cn'
 import styles from './TablesPanel.module.css'
 
 type TablesPanelProps = {
+  businessId: string | null
   orders: CafeOrder[]
   loading: boolean
   onOrdersRefresh: () => void | Promise<void>
   attentionTableIds: ReadonlySet<number>
-  onClearTableAttention: (tableId: number) => void
+  onClearTableAttention: (tableId: number) => Promise<void>
+  tables: CafeTable[]
+  names: ReadonlyMap<number, string>
+  setNickname: (tableId: number, nickname: string | null) => Promise<void>
+  addTable: () => Promise<void>
+  removeTable: (tableId: number) => Promise<void>
 }
 
 export function TablesPanel({
+  businessId,
   orders,
   loading,
   onOrdersRefresh,
   attentionTableIds,
   onClearTableAttention,
+  tables,
+  names,
+  setNickname,
+  addTable,
+  removeTable,
 }: TablesPanelProps) {
   const [preparedTableId, setPreparedTableId] = useState<number | null>(null)
   const [detailTableId, setDetailTableId] = useState<number | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
-  const { tables, names, setNickname, addTable, removeTable } = useCafeTables()
 
   const byTable = useMemo(() => {
     const map = new Map<number, CafeOrder[]>()
@@ -61,7 +72,7 @@ export function TablesPanel({
         tableId={preparedTableId}
         onCancel={() => setPreparedTableId(null)}
         onConfirm={() => {
-          if (preparedTableId != null) onClearTableAttention(preparedTableId)
+          if (preparedTableId != null) void onClearTableAttention(preparedTableId)
           setPreparedTableId(null)
         }}
       />
@@ -110,6 +121,7 @@ export function TablesPanel({
 
               <div className={styles.cardMenu}>
                 <TableCardMenu
+                  businessId={businessId}
                   tableNumber={table.id}
                   tableName={tableName}
                   orderCount={tableOrders.length}
@@ -119,13 +131,15 @@ export function TablesPanel({
                   onResetComplete={onOrdersRefresh}
                   onSetNickname={(nick) => setNickname(table.id, nick)}
                   onTransfer={async (toId) => {
-                    await transferOrdersBetweenTables(table.id, toId)
-                    onClearTableAttention(table.id)
+                    if (!businessId) return
+                    await transferOrdersBetweenTables(businessId, table.id, toId)
+                    void onClearTableAttention(table.id)
                   }}
                   onDeleteTable={async () => {
-                    await deleteOrdersForTable(table.id)
+                    if (!businessId) return
+                    await deleteOrdersForTable(businessId, table.id)
                     await removeTable(table.id)
-                    onClearTableAttention(table.id)
+                    void onClearTableAttention(table.id)
                     setDetailTableId((cur) => (cur === table.id ? null : cur))
                   }}
                 />

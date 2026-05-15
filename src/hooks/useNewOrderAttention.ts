@@ -1,16 +1,58 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { CafeTable } from '@/constants/tables'
 import type { CafeOrder } from '@/types/order'
+import { recordOrderAttentionCleared } from '@/services/tableRepository'
 import { startOrderAlarm, stopOrderAlarm } from '@/utils/orderAlarmSound'
 
-export function useNewOrderAttention(orders: CafeOrder[]) {
-  const [attentionTables, setAttentionTables] = useState(() => new Set<number>())
+function attentionTablesFromServer(orders: CafeOrder[], tables: CafeTable[]): Set<number> {
+  const clearedAt = new Map<number, string | null>(
+    tables.map((t) => [t.id, t.lastOrderAttentionClearedAt] as const),
+  )
+  const next = new Set<number>()
+  for (const o of orders) {
+    const cleared = clearedAt.get(o.tableNumber) ?? null
+    const boundaryMs = cleared ? new Date(cleared).getTime() : 0
+    const createdMs = new Date(o.createdAt).getTime()
+    if (Number.isFinite(createdMs) && Number.isFinite(boundaryMs) && createdMs > boundaryMs) {
+      next.add(o.tableNumber)
+    }
+  }
+  return next
+}
+
+type UseNewOrderAttentionArgs = {
+  businessId: string | null
+  orders: CafeOrder[]
+  ordersLoading: boolean
+  tables: CafeTable[]
+  tablesLoading: boolean
+  refreshTables: () => void | Promise<void>
+}
+
+export function useNewOrderAttention({
+  businessId,
+  orders,
+  ordersLoading,
+  tables,
+  tablesLoading,
+  refreshTables,
+}: UseNewOrderAttentionArgs) {
   const [incomingOpen, setIncomingOpen] = useState(false)
   const [alertTables, setAlertTables] = useState<number[]>([])
 
   const prevIdsRef = useRef<Set<string>>(new Set())
   const bootRef = useRef(true)
 
+  const dataLoading = ordersLoading || tablesLoading
+
+  const attentionTables = useMemo(() => {
+    if (ordersLoading || tablesLoading) return new Set<number>()
+    return attentionTablesFromServer(orders, tables)
+  }, [orders, tables, ordersLoading, tablesLoading])
+
   useEffect(() => {
+    if (dataLoading) return
+
     const ids = new Set(orders.map((o) => o.id))
 
     if (bootRef.current) {
@@ -33,29 +75,25 @@ export function useNewOrderAttention(orders: CafeOrder[]) {
       setIncomingOpen(true)
       startOrderAlarm()
     }
-
-    setAttentionTables((prevAttention) => {
-      const next = new Set(prevAttention)
-      for (const tid of prevAttention) {
-        if (!orders.some((o) => o.tableNumber === tid)) next.delete(tid)
-      }
-      if (tablesFromNew) tablesFromNew.forEach((t) => next.add(t))
-      return next
-    })
-  }, [orders])
+  }, [orders, dataLoading])
 
   const dismissIncoming = useCallback(() => {
     stopOrderAlarm()
     setIncomingOpen(false)
   }, [])
 
-  const clearAttention = useCallback((tableId: number) => {
-    setAttentionTables((prev) => {
-      const next = new Set(prev)
-      next.delete(tableId)
-      return next
-    })
-  }, [])
+  const clearAttention = useCallback(
+    async (tableId: number) => {
+      if (!businessId) return
+      try {
+        await recordOrderAttentionCleared(businessId, tableId)
+        await refreshTables()
+      } catch {
+        /* ağ hatası: personel tekrar dener */
+      }
+    },
+    [businessId, refreshTables],
+  )
 
   useEffect(() => () => stopOrderAlarm(), [])
 

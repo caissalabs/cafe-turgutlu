@@ -59,10 +59,14 @@ export function useMasaNumber(options?: UseMasaNumberOptions) {
   const setMasa = useCallback(
     (n: number) => {
       if (n < 1 || n > MAX_TABLE_ID) return
-      sessionStorage.setItem(MASA_SESSION_KEY, String(n))
-      navigate(`${location.pathname}?masa=${n}`, { replace: true })
+      if (source === 'url-or-session') {
+        sessionStorage.setItem(MASA_SESSION_KEY, String(n))
+      }
+      const next = new URLSearchParams(searchParams)
+      next.set('masa', String(n))
+      navigate(`${location.pathname}?${next.toString()}`, { replace: true })
     },
-    [navigate, location.pathname],
+    [navigate, location.pathname, searchParams, source],
   )
 
   return {

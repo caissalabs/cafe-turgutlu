@@ -13,6 +13,11 @@ export type CafeTable = {
   name: string
   /** Opsiyonel: panelde gösterilecek takma ad. */
   nickname: string | null
+  /**
+   * Sunucuda kayıtlı son "sipariş hazırlandı" damgası (ISO).
+   * Bundan sonra oluşturulan siparişler bu masa için dikkat gerektirir.
+   */
+  lastOrderAttentionClearedAt: string | null
 }
 
 /** QR ve veritabanında kullanılan sabit etiket. */
@@ -30,5 +35,5 @@ export function tableDisplayLabel(table: Pick<CafeTable, 'id' | 'name' | 'nickna
 /** Varsayılan masa listesi (Masa 1 … Masa 10). */
 export const CAFE_TABLES: CafeTable[] = Array.from({ length: TABLE_COUNT }, (_, i) => {
   const n = i + 1
-  return { id: n, name: canonicalTableName(n), nickname: null }
+  return { id: n, name: canonicalTableName(n), nickname: null, lastOrderAttentionClearedAt: null }
 })

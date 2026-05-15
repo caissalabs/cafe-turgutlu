@@ -19,6 +19,7 @@ type TableOption = {
 }
 
 type TableCardMenuProps = {
+  businessId: string | null
   tableNumber: number
   /** Kartta görünen etiket (takma ad veya Masa X). */
   tableName: string
@@ -36,6 +37,7 @@ type TableCardMenuProps = {
 }
 
 export function TableCardMenu({
+  businessId,
   tableNumber,
   tableName,
   tableNickname,
@@ -141,9 +143,14 @@ export function TableCardMenu({
   }
 
   const runReset = async () => {
+    if (!businessId) {
+      setErrorMsg('İşletme bilgisi eksik.')
+      setPhase('error')
+      return
+    }
     setPhase('loading')
     try {
-      await deleteOrdersForTable(tableNumber)
+      await deleteOrdersForTable(businessId, tableNumber)
       await onResetComplete()
       setPhase('idle')
       setErrorMsg(null)

@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabaseClient'
 import type { CafeOrder, CafeOrderRow, OrderLine } from '@/types/order'
 
-const LOCAL_KEY = 'cafe-turgutlu-orders-v1'
+function orderStorageKey(businessId: string): string {
+  return `cafe-turgutlu-orders::${businessId}`
+}
 
 function mapRow(row: CafeOrderRow): CafeOrder {
   return {
@@ -13,9 +15,9 @@ function mapRow(row: CafeOrderRow): CafeOrder {
   }
 }
 
-function readLocalOrders(): CafeOrder[] {
+function readLocalOrders(businessId: string): CafeOrder[] {
   try {
-    const raw = localStorage.getItem(LOCAL_KEY)
+    const raw = localStorage.getItem(orderStorageKey(businessId))
     if (!raw) return []
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return []
@@ -36,39 +38,43 @@ function readLocalOrders(): CafeOrder[] {
   }
 }
 
-function writeLocalOrders(orders: CafeOrder[]) {
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(orders))
+function writeLocalOrders(businessId: string, orders: CafeOrder[]) {
+  localStorage.setItem(orderStorageKey(businessId), JSON.stringify(orders))
 }
 
-export async function fetchAllOrders(): Promise<CafeOrder[]> {
+export async function fetchAllOrders(businessId: string): Promise<CafeOrder[]> {
   if (supabase) {
     const { data, error } = await supabase
       .from('cafe_orders')
       .select('*')
+      .eq('business_id', businessId)
       .order('created_at', { ascending: false })
 
     if (error) throw error
     return ((data ?? []) as CafeOrderRow[]).map(mapRow)
   }
-  return readLocalOrders()
+  return readLocalOrders(businessId)
 }
 
-/** Belirli bir masanın siparişlerini getirir. */
-export async function fetchOrdersByTable(tableNumber: number): Promise<CafeOrder[]> {
+export async function fetchOrdersByTable(
+  businessId: string,
+  tableNumber: number,
+): Promise<CafeOrder[]> {
   if (supabase) {
     const { data, error } = await supabase
       .from('cafe_orders')
       .select('*')
+      .eq('business_id', businessId)
       .eq('table_number', tableNumber)
       .order('created_at', { ascending: false })
     if (error) throw error
     return ((data ?? []) as CafeOrderRow[]).map(mapRow)
   }
-  return readLocalOrders().filter((o) => o.tableNumber === tableNumber)
+  return readLocalOrders(businessId).filter((o) => o.tableNumber === tableNumber)
 }
 
-/** Tüm siparişleri bir masadan diğerine taşır (aynı kayıtlar, yalnızca masa numarası değişir). */
 export async function transferOrdersBetweenTables(
+  businessId: string,
   fromTableNumber: number,
   toTableNumber: number,
 ): Promise<void> {
@@ -77,37 +83,45 @@ export async function transferOrdersBetweenTables(
     const { error } = await supabase
       .from('cafe_orders')
       .update({ table_number: toTableNumber })
+      .eq('business_id', businessId)
       .eq('table_number', fromTableNumber)
     if (error) throw error
     return
   }
-  const orders = readLocalOrders().map((o) =>
+  const orders = readLocalOrders(businessId).map((o) =>
     o.tableNumber === fromTableNumber ? { ...o, tableNumber: toTableNumber } : o,
   )
-  writeLocalOrders(orders)
+  writeLocalOrders(businessId, orders)
 }
 
-/** Masanın tüm sipariş kayıtlarını siler (Supabase veya yerel depo). */
-export async function deleteOrdersForTable(tableNumber: number): Promise<void> {
+export async function deleteOrdersForTable(
+  businessId: string,
+  tableNumber: number,
+): Promise<void> {
   if (supabase) {
     const { error } = await supabase
       .from('cafe_orders')
       .delete()
+      .eq('business_id', businessId)
       .eq('table_number', tableNumber)
     if (error) throw error
     return
   }
-  const next = readLocalOrders().filter((o) => o.tableNumber !== tableNumber)
-  writeLocalOrders(next)
+  const next = readLocalOrders(businessId).filter((o) => o.tableNumber !== tableNumber)
+  writeLocalOrders(businessId, next)
 }
 
-export async function submitOrder(input: {
-  tableNumber: number
-  lines: OrderLine[]
-  totalTry: number
-}): Promise<void> {
+export async function submitOrder(
+  businessId: string,
+  input: {
+    tableNumber: number
+    lines: OrderLine[]
+    totalTry: number
+  },
+): Promise<void> {
   if (supabase) {
     const { error } = await supabase.from('cafe_orders').insert({
+      business_id: businessId,
       table_number: input.tableNumber,
       lines: input.lines,
       total_try: input.totalTry,
@@ -123,14 +137,17 @@ export async function submitOrder(input: {
     totalTry: input.totalTry,
     createdAt: new Date().toISOString(),
   }
-  writeLocalOrders([order, ...readLocalOrders()])
+  writeLocalOrders(businessId, [order, ...readLocalOrders(businessId)])
 }
 
-export function subscribeOrders(onOrders: (orders: CafeOrder[]) => void): () => void {
+export function subscribeOrders(
+  businessId: string,
+  onOrders: (orders: CafeOrder[]) => void ,
+): () => void {
   let cancelled = false
 
   const refresh = () => {
-    void fetchAllOrders().then((list) => {
+    void fetchAllOrders(businessId).then((list) => {
       if (!cancelled) onOrders(list)
     })
   }
@@ -140,10 +157,15 @@ export function subscribeOrders(onOrders: (orders: CafeOrder[]) => void): () => 
   if (supabase) {
     const client = supabase
     const channel = client
-      .channel('cafe_orders_live')
+      .channel(`cafe_orders_${businessId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'cafe_orders' },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cafe_orders',
+          filter: `business_id=eq.${businessId}`,
+        },
         () => refresh(),
       )
       .subscribe()
@@ -154,8 +176,9 @@ export function subscribeOrders(onOrders: (orders: CafeOrder[]) => void): () => 
     }
   }
 
+  const key = orderStorageKey(businessId)
   const onStorage = (ev: StorageEvent) => {
-    if (ev.key === LOCAL_KEY) refresh()
+    if (ev.key === key) refresh()
   }
   window.addEventListener('storage', onStorage)
   const interval = window.setInterval(refresh, 2500)

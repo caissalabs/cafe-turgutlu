@@ -37,6 +37,14 @@ export function Layout({ children }: LayoutProps) {
             >
               Menü
             </NavLink>
+            <NavLink
+              to="/home/menu/onizleme"
+              className={({ isActive }) =>
+                cn(styles.navItem, isActive && styles.navItemActive)
+              }
+            >
+              Önizleme
+            </NavLink>
             <button
               type="button"
               className={styles.logout}

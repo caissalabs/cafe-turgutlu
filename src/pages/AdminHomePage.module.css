@@ -11,3 +11,24 @@
   background: color-mix(in srgb, #e03131 10%, var(--surface));
   border: 1px solid color-mix(in srgb, #e03131 28%, var(--border));
 }
+
+.menuBanner {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+.menuBanner a {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.menuBanner a:hover {
+  color: var(--accent-hover);
+}
