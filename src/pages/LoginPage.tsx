@@ -15,7 +15,6 @@ export function LoginPage() {
   const location = useLocation()
   const from = (location.state as LocationState | null)?.from?.pathname ?? '/home'
 
-  const [businessSlug, setBusinessSlug] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +31,7 @@ export function LoginPage() {
     setError(null)
     setBusy(true)
     try {
-      const result = await login(businessSlug.trim(), username.trim(), password)
+      const result = await login(username.trim(), password)
       if (result.ok) {
         setPassword('')
         navigate(from === '/login' ? '/home' : from, { replace: true })
@@ -56,24 +55,6 @@ export function LoginPage() {
           autoComplete="on"
           method="post"
         >
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="business-slug">
-              İşletme kodu (kısa ad)
-            </label>
-            <input
-              id="business-slug"
-              name="business_slug"
-              className={styles.input}
-              type="text"
-              autoComplete="off"
-              required
-              maxLength={64}
-              placeholder="örn. default"
-              value={businessSlug}
-              onChange={(ev) => setBusinessSlug(ev.target.value)}
-              disabled={busy}
-            />
-          </div>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="admin-user">
               Kullanıcı adı

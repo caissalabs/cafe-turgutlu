@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBusinessId(null)
   }, [])
 
-  const login = useCallback(async (businessSlug: string, username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string) => {
     if (Date.now() < lockUntil) {
       const sec = Math.ceil((lockUntil - Date.now()) / 1000)
       return {
@@ -75,15 +75,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const slug = businessSlug.trim().toLowerCase()
     const user = username.trim()
+    /** Yönetici girişi tek işletmeye bağlı; slug env ile değiştirilebilir (çok kiracılı hazırlık). */
+    const adminBusinessSlug =
+      (import.meta.env.VITE_ADMIN_BUSINESS_SLUG as string | undefined)?.trim().toLowerCase() ||
+      DEFAULT_BUSINESS_SLUG
 
     if (supabase) {
-      if (!slug || !user || !password) {
-        return { ok: false, error: 'İşletme kodu, kullanıcı adı ve şifre gerekli.' }
+      if (!user || !password) {
+        return { ok: false, error: 'Kullanıcı adı ve şifre gerekli.' }
       }
       const { data, error } = await supabase.rpc('login_business', {
-        p_slug: slug,
+        p_slug: adminBusinessSlug,
         p_username: user,
         p_password: password,
       })
@@ -99,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           failedAttempts = 0
         }
         await new Promise((r) => setTimeout(r, 350 + Math.random() * 250))
-        return { ok: false, error: 'İşletme kodu, kullanıcı adı veya şifre hatalı.' }
+        return { ok: false, error: 'Kullanıcı adı veya şifre hatalı.' }
       }
       failedAttempts = 0
       lockUntil = 0
@@ -120,9 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     /* Yerel mod: .env ile tek işletme */
     const expectedUser = import.meta.env.VITE_ADMIN_USERNAME ?? ''
     const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD ?? ''
-    const expectedSlug =
-      (import.meta.env.VITE_LOCAL_BUSINESS_SLUG as string | undefined)?.trim().toLowerCase() ??
-      DEFAULT_BUSINESS_SLUG
 
     if (!expectedUser || !expectedPass) {
       console.error(
@@ -134,18 +134,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const slugOk = timingSafeEqual(slug, expectedSlug)
     const userOk = timingSafeEqual(user, expectedUser)
     const passOk = timingSafeEqual(password, expectedPass)
 
-    if (!slugOk || !userOk || !passOk) {
+    if (!userOk || !passOk) {
       failedAttempts += 1
       if (failedAttempts >= ADMIN_LOCKOUT_ATTEMPTS) {
         lockUntil = Date.now() + ADMIN_LOCKOUT_MS
         failedAttempts = 0
       }
       await new Promise((r) => setTimeout(r, 350 + Math.random() * 250))
-      return { ok: false, error: 'İşletme kodu, kullanıcı adı veya şifre hatalı.' }
+      return { ok: false, error: 'Kullanıcı adı veya şifre hatalı.' }
     }
 
     failedAttempts = 0

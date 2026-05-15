@@ -4,11 +4,7 @@ export type AuthContextValue = {
   isAuthenticated: boolean
   /** Oturum açık işletme (Supabase satır kimliği) */
   businessId: string | null
-  login: (
-    businessSlug: string,
-    username: string,
-    password: string,
-  ) => Promise<{ ok: boolean; error?: string }>
+  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>
   logout: () => void
 }
 
