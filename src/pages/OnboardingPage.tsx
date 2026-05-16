@@ -38,7 +38,7 @@ export function OnboardingPage() {
     setError(null)
     setBusy(true)
     try {
-      if (authMethod === 'oauth') {
+      if (authMethod === 'oauth' || authMethod === 'email') {
         const result = await completeOnboardingGoogle({
           businessName,
           managerName,
@@ -73,7 +73,7 @@ export function OnboardingPage() {
     }
   }
 
-  const oauth = authMethod === 'oauth'
+  const oauth = authMethod === 'oauth' || authMethod === 'email'
 
   return (
     <div className={styles.page}>
@@ -86,7 +86,13 @@ export function OnboardingPage() {
         {panelUsername ? (
           <p className={styles.switchRow}>
             Hesap:{' '}
-            <strong>{oauth ? 'Google ile bağlı' : panelUsername}</strong>
+            <strong>
+              {authMethod === 'oauth'
+                ? 'Google ile bağlı'
+                : authMethod === 'email'
+                  ? `${panelUsername} (e-posta ile)`
+                  : panelUsername}
+            </strong>
           </p>
         ) : null}
 

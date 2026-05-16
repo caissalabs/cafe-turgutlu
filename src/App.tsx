@@ -18,6 +18,8 @@ import { OnboardingPage } from '@/pages/OnboardingPage'
 import { OrderSuccessPage } from '@/pages/OrderSuccessPage'
 import { PendingApprovalPage } from '@/pages/PendingApprovalPage'
 import { RegisterPage } from '@/pages/RegisterPage'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { QrCodesPage } from '@/pages/QrCodesPage'
 
 function PostAuthNavigate() {
@@ -35,6 +37,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/sifremi-unuttum" element={<ForgotPasswordPage />} />
+          <Route path="/auth/sifre-yenile" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           <Route element={<RequirePanelAuth />}>

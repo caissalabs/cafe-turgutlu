@@ -18,6 +18,7 @@ export function RegisterPage() {
   const navigate = useNavigate()
 
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +45,7 @@ export function RegisterPage() {
       const result = await register({
         username,
         password,
+        email,
       })
       if (result.ok) {
         setPassword('')
@@ -62,7 +64,8 @@ export function RegisterPage() {
       <div className={styles.card}>
         <h1 className={styles.title}>Kayıt ol</h1>
         <p className={styles.subtitle}>
-          Önce hesap oluşturun; işletme bilgilerini bir sonraki adımda gireceksiniz.
+          Önce hesap oluşturun; işletme bilgilerini bir sonraki adımda gireceksiniz. Şifre sıfırlama için
+          e-posta doğru olmalıdır.
         </p>
 
         <Button
@@ -123,6 +126,23 @@ export function RegisterPage() {
               maxLength={128}
               value={username}
               onChange={(ev) => setUsername(ev.target.value)}
+              disabled={busy}
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="reg-email">
+              E-posta
+            </label>
+            <input
+              id="reg-email"
+              name="email"
+              className={styles.input}
+              type="email"
+              autoComplete="email"
+              required
+              maxLength={256}
+              value={email}
+              onChange={(ev) => setEmail(ev.target.value)}
               disabled={busy}
             />
           </div>

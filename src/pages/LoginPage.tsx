@@ -55,7 +55,9 @@ export function LoginPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>Yönetici girişi</h1>
-        <p className={styles.subtitle}>Kullanıcı adınız ve şifrenizle panele giriş yapın</p>
+        <p className={styles.subtitle}>
+          E-posta veya kullanıcı adınız ve şifrenizle panele giriş yapın.
+        </p>
 
         <Button
           type="button"
@@ -97,7 +99,7 @@ export function LoginPage() {
         </Button>
 
         <div className={styles.divider} role="separator">
-          veya kullanıcı adı ile
+          veya e-posta / kullanıcı adı ile
         </div>
 
         <form
@@ -108,7 +110,7 @@ export function LoginPage() {
         >
           <div className={styles.field}>
             <label className={styles.label} htmlFor="admin-user">
-              Kullanıcı adı
+              E-posta veya kullanıcı adı
             </label>
             <input
               id="admin-user"
@@ -151,6 +153,12 @@ export function LoginPage() {
             {busy ? 'Giriş yapılıyor…' : 'Giriş yap'}
           </Button>
         </form>
+
+        <p className={styles.switchRow}>
+          <Link className={styles.link} to="/sifremi-unuttum">
+            Şifremi unuttum
+          </Link>
+        </p>
 
         <p className={styles.switchRow}>
           Hesabınız yok mu?{' '}

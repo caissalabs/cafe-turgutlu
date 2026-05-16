@@ -1,10 +1,12 @@
 import { createContext } from 'react'
 
-export type AuthMethod = 'password' | 'oauth'
+/** Şifre: eski yalnızca-RPC oturumu | oauth: Google | email: Supabase e-posta/şifre oturumu */
+export type AuthMethod = 'password' | 'oauth' | 'email'
 
 export type RegisterInput = {
   username: string
   password: string
+  email: string
 }
 
 export type CompleteOnboardingPasswordInput = {
@@ -31,8 +33,12 @@ export type AuthContextValue = {
   panelUsername: string | null
   authMethod: AuthMethod | null
 
-  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  login: (identifier: string, password: string) => Promise<{ ok: boolean; error?: string }>
   register: (input: RegisterInput) => Promise<{ ok: boolean; error?: string }>
+  /** Şifre sıfırlama e-postası gönderir (Supabase Auth). */
+  requestPasswordReset: (email: string) => Promise<{ ok: boolean; error?: string }>
+  /** Kurtarma oturumunda yeni şifre + bcrypt senkronu. */
+  completePasswordRecovery: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
   completeOnboardingPassword: (
     input: CompleteOnboardingPasswordInput,
   ) => Promise<{ ok: boolean; error?: string }>

@@ -22,6 +22,7 @@ import {
   type RegisterInput,
 } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabaseClient'
+import { oauthRedirectBase } from '@/utils/oauthRedirectBase'
 
 type SessionMeta = {
   exp: number
@@ -86,7 +87,9 @@ function readStoredSession(): {
       typeof meta.active !== 'boolean' ||
       typeof meta.onboardingComplete !== 'boolean' ||
       typeof meta.username !== 'string' ||
-      (meta.authMethod !== 'oauth' && meta.authMethod !== 'password')
+      (meta.authMethod !== 'oauth' &&
+        meta.authMethod !== 'password' &&
+        meta.authMethod !== 'email')
     ) {
       clearStoredSession()
       return {
@@ -157,13 +160,6 @@ function writeMetaMerge(partial: Partial<Pick<SessionMeta, 'active' | 'onboardin
   }
 }
 
-function oauthRedirectBase(): string {
-  const env = import.meta.env.VITE_SITE_URL?.trim()
-  if (env) return env.replace(/\/$/, '')
-  if (typeof window !== 'undefined') return window.location.origin.replace(/\/$/, '')
-  return ''
-}
-
 let loginFailedAttempts = 0
 let loginLockUntil = 0
 
@@ -175,9 +171,13 @@ function rpcErrorMessage(err: { message?: string } | null): string {
   if (raw.includes('Geçersiz kullanıcı')) return 'Kullanıcı adı veya şifre geçersiz. Şifre en az 8 karakter olmalıdır.'
   if (raw.includes('Geçersiz işletme')) return 'İşletme bilgileri geçersiz.'
   if (raw.includes('Kimlik doğrulanamadı')) return 'Şifre hatalı.'
-  if (raw.includes('zaten kullanılıyor')) return 'Bu kullanıcı adı veya kısa adres zaten kullanılıyor.'
+  if (raw.includes('zaten kullanılıyor'))
+    return 'Bu kullanıcı adı, e-posta veya kısa adres zaten kullanılıyor.'
   if (raw.includes('Bu Google hesabı zaten')) return 'Bu Google hesabı zaten bir işletmeye bağlı.'
   if (raw.includes('Oturum gerekli')) return 'Oturum süresi dolmuş. Tekrar giriş yapın.'
+  if (raw.includes('Geçerli bir e-posta')) return 'Geçerli bir e-posta adresi girin.'
+  if (raw.includes('Panel kaydı bağlanamadı')) return raw.trim()
+  if (raw.includes('İşletme kullanıcısı bulunamadı')) return raw.trim()
   return raw.trim() || 'İşlem sırasında bir hata oluştu.'
 }
 
@@ -213,6 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = await supabase.auth.getSession()
     if (!session?.user) return
 
+    const rawProvider = session.user.app_metadata?.provider
+    const method: AuthMethod = rawProvider === 'google' ? 'oauth' : 'email'
+
     const { data, error } = await supabase.rpc('get_panel_state_for_auth_user')
     if (error) {
       console.error(error)
@@ -220,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const parsed = parsePanelRpcPayload(data)
     if (!parsed) return
-    applyPayload(parsed, 'oauth')
+    applyPayload(parsed, method)
   }, [applyPayload])
 
   useEffect(() => {
@@ -270,7 +273,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAuthMethod(stored.authMethod)
         }
 
-        if (session?.user && (!stored.ok || stored.authMethod === 'oauth')) {
+        if (
+          session?.user &&
+          (!stored.ok || stored.authMethod === 'oauth' || stored.authMethod === 'email')
+        ) {
           await syncOAuthPanelSession()
         }
         return
@@ -278,7 +284,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
         const storedNow = readStoredSession()
-        if (!storedNow.ok || storedNow.authMethod === 'oauth') {
+        if (
+          !storedNow.ok ||
+          storedNow.authMethod === 'oauth' ||
+          storedNow.authMethod === 'email'
+        ) {
           await syncOAuthPanelSession()
         }
       }
@@ -319,7 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [businessId])
 
   const login = useCallback(
-    async (username: string, password: string) => {
+    async (identifier: string, password: string) => {
       if (Date.now() < loginLockUntil) {
         const sec = Math.ceil((loginLockUntil - Date.now()) / 1000)
         return {
@@ -328,9 +338,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const user = username.trim()
-      if (!user || !password) {
-        return { ok: false, error: 'Kullanıcı adı ve şifre gerekli.' }
+      const id = identifier.trim()
+      if (!id || !password) {
+        return { ok: false, error: 'E-posta veya kullanıcı adı ve şifre gerekli.' }
       }
 
       const { data: sessionData } = await supabase.auth.getSession()
@@ -343,8 +353,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      if (id.includes('@')) {
+        const email = id.toLowerCase()
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) {
+          console.error(error)
+          loginFailedAttempts += 1
+          if (loginFailedAttempts >= ADMIN_LOCKOUT_ATTEMPTS) {
+            loginLockUntil = Date.now() + ADMIN_LOCKOUT_MS
+            loginFailedAttempts = 0
+          }
+          await new Promise((r) => setTimeout(r, 350 + Math.random() * 250))
+          return { ok: false, error: 'E-posta veya şifre hatalı.' }
+        }
+
+        await syncOAuthPanelSession()
+        const stored = readStoredSession()
+        if (!stored.ok) {
+          await supabase.auth.signOut()
+          loginFailedAttempts += 1
+          return {
+            ok: false,
+            error:
+              'Bu e-posta ile kayıtlı panel hesabı bulunamadı. Önce işletme kaydı oluşturduğunuzdan emin olun.',
+          }
+        }
+
+        loginFailedAttempts = 0
+        loginLockUntil = 0
+        return { ok: true }
+      }
+
       const { data, error } = await supabase.rpc('login_user', {
-        p_username: user,
+        p_username: id,
         p_password: password,
       })
       if (error) {
@@ -365,10 +406,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       loginFailedAttempts = 0
       loginLockUntil = 0
-      applyPayload(parsed, 'password', user)
+      applyPayload(parsed, 'password', id)
       return { ok: true }
     },
-    [applyPayload],
+    [applyPayload, syncOAuthPanelSession],
   )
 
   const register = useCallback(
@@ -383,9 +424,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const username = input.username.trim()
       const password = input.password
+      const email = input.email.trim().toLowerCase()
 
       if (!username || !password) {
         return { ok: false, error: 'Kullanıcı adı ve şifre gerekli.' }
+      }
+      if (!email.includes('@') || email.length < 5) {
+        return { ok: false, error: 'Geçerli bir e-posta adresi girin.' }
       }
       if (username.length < 2) {
         return { ok: false, error: 'Kullanıcı adı en az 2 karakter olmalıdır.' }
@@ -404,32 +449,112 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const { data, error } = await supabase.rpc('register_user', {
+      const { error: regErr } = await supabase.rpc('register_user', {
         p_username: username,
         p_password: password,
+        p_email: email,
       })
 
-      if (error) {
-        console.error(error)
+      if (regErr) {
+        console.error(regErr)
         registerFailedAttempts += 1
         if (registerFailedAttempts >= ADMIN_LOCKOUT_ATTEMPTS) {
           registerLockUntil = Date.now() + ADMIN_LOCKOUT_MS
           registerFailedAttempts = 0
         }
-        return { ok: false, error: rpcErrorMessage(error) }
+        return { ok: false, error: rpcErrorMessage(regErr) }
       }
 
-      const parsed = parsePanelRpcPayload(data)
+      const base = oauthRedirectBase()
+      const { data: signData, error: signErr } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: base ? `${base}/auth/callback` : undefined,
+        },
+      })
+
+      if (signErr) {
+        console.error(signErr)
+        return {
+          ok: false,
+          error:
+            signErr.message ||
+            'İşletme oluşturuldu ancak oturum bağlantısı kurulamadı. Destek ile iletişime geçin.',
+        }
+      }
+
+      if (!signData.session) {
+        return {
+          ok: false,
+          error:
+            'E-posta doğrulaması açıksa gelen kutunuzu kontrol edin ve doğrulayın; ardından tekrar kayıt olmayı deneyin. Geliştirme için Dashboard’da e-posta doğrulamasını kapatabilirsiniz.',
+        }
+      }
+
+      const { data: linkData, error: linkErr } = await supabase.rpc('link_password_panel_to_auth', {
+        p_username: username,
+      })
+
+      if (linkErr) {
+        console.error(linkErr)
+        await supabase.auth.signOut()
+        return { ok: false, error: rpcErrorMessage(linkErr) }
+      }
+
+      const parsed = parsePanelRpcPayload(linkData)
       if (!parsed) {
-        return { ok: false, error: 'Kayıt tamamlanamadı.' }
+        await supabase.auth.signOut()
+        return { ok: false, error: 'Panel bağlantısı tamamlanamadı.' }
       }
 
       registerFailedAttempts = 0
       registerLockUntil = 0
-      applyPayload(parsed, 'password', username)
+      applyPayload(parsed, 'email', username)
       return { ok: true }
     },
     [applyPayload],
+  )
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const e = email.trim().toLowerCase()
+    if (!e.includes('@')) {
+      return { ok: false, error: 'Geçerli bir e-posta adresi girin.' }
+    }
+    const base = oauthRedirectBase()
+    if (!base) {
+      return { ok: false, error: 'Site adresi alınamadı.' }
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(e, {
+      redirectTo: `${base}/auth/sifre-yenile`,
+    })
+    if (error) {
+      console.error(error)
+      return { ok: false, error: error.message || 'E-posta gönderilemedi.' }
+    }
+    return { ok: true }
+  }, [])
+
+  const completePasswordRecovery = useCallback(
+    async (newPassword: string) => {
+      if (newPassword.length < 8) {
+        return { ok: false, error: 'Şifre en az 8 karakter olmalıdır.' }
+      }
+      const { error: uErr } = await supabase.auth.updateUser({ password: newPassword })
+      if (uErr) {
+        return { ok: false, error: uErr.message || 'Şifre güncellenemedi.' }
+      }
+      const { error: sErr } = await supabase.rpc('sync_business_user_password', {
+        p_password: newPassword,
+      })
+      if (sErr) {
+        console.error(sErr)
+        return { ok: false, error: rpcErrorMessage(sErr) }
+      }
+      await syncOAuthPanelSession()
+      return { ok: true }
+    },
+    [syncOAuthPanelSession],
   )
 
   const completeOnboardingPassword = useCallback(
@@ -497,8 +622,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, error: 'Kayıt güncellenemedi.' }
       }
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const rawProvider = session?.user?.app_metadata?.provider
+      const method: AuthMethod = rawProvider === 'google' ? 'oauth' : 'email'
+
       const u = panelUsername ?? parsed.username
-      applyPayload(parsed, 'oauth', u ?? undefined)
+      applyPayload(parsed, method, u ?? undefined)
       return { ok: true }
     },
     [applyPayload, panelUsername],
@@ -542,6 +673,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authMethod,
       login,
       register,
+      requestPasswordReset,
+      completePasswordRecovery,
       completeOnboardingPassword,
       completeOnboardingGoogle,
       signInWithGoogle,
@@ -558,6 +691,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authMethod,
       login,
       register,
+      requestPasswordReset,
+      completePasswordRecovery,
       completeOnboardingPassword,
       completeOnboardingGoogle,
       signInWithGoogle,
