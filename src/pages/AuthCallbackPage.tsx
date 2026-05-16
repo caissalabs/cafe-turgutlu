@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabaseClient'
+import { useAuth } from '@/hooks/useAuth'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import styles from './LoginPage.module.css'
 
 export function AuthCallbackPage() {
   useDocumentTitle('CafeNET — Giriş')
   const navigate = useNavigate()
+  const { syncOAuthPanelSession } = useAuth()
   const [message, setMessage] = useState('Hesabınız doğrulanıyor…')
 
   useEffect(() => {
@@ -26,23 +28,40 @@ export function AuthCallbackPage() {
         return
       }
 
-      const { data: bid, error: rpcErr } = await supabase.rpc('get_business_id_for_auth_user')
+      const { data: panelRaw, error: panelErr } = await supabase.rpc('get_panel_state_for_auth_user')
 
       if (cancelled) return
 
-      if (rpcErr) {
-        console.error(rpcErr)
+      if (panelErr) {
+        console.error(panelErr)
         setMessage('İşletme bilgisi alınamadı.')
         navigate('/login', { replace: true })
         return
       }
 
-      if (typeof bid === 'string') {
-        navigate('/home', { replace: true })
+      if (
+        panelRaw &&
+        typeof panelRaw === 'object' &&
+        typeof (panelRaw as { business_id?: string }).business_id === 'string'
+      ) {
+        await syncOAuthPanelSession()
+        navigate('/', { replace: true })
         return
       }
 
-      navigate('/register/google', { replace: true })
+      const { error: skelErr } = await supabase.rpc('register_google_skeleton_business')
+
+      if (cancelled) return
+
+      if (skelErr) {
+        console.error(skelErr)
+        setMessage('İşletme oluşturulamadı.')
+        navigate('/login', { replace: true })
+        return
+      }
+
+      await syncOAuthPanelSession()
+      navigate('/onboarding', { replace: true })
     }
 
     void run()
@@ -50,7 +69,7 @@ export function AuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [navigate])
+  }, [navigate, syncOAuthPanelSession])
 
   return (
     <div className={styles.page}>

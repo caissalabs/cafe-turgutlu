@@ -10,32 +10,39 @@ type LocationState = { from?: { pathname?: string } }
 
 export function LoginPage() {
   useDocumentTitle('CafeNET — Yönetici girişi')
-  const { isAuthenticated, login, signInWithGoogle } = useAuth()
+  const {
+    isAuthenticated,
+    login,
+    signInWithGoogle,
+    onboardingComplete,
+    active,
+  } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as LocationState | null)?.from?.pathname ?? '/home'
 
-  const [slug, setSlug] = useState('')
+  const from = (location.state as LocationState | null)?.from?.pathname ?? '/'
+
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from === '/login' ? '/home' : from, { replace: true })
-    }
-  }, [from, isAuthenticated, navigate])
+    if (!isAuthenticated) return
+    if (!onboardingComplete) navigate('/onboarding', { replace: true })
+    else if (!active) navigate('/beklemede', { replace: true })
+    else navigate(from.startsWith('/login') ? '/home' : from, { replace: true })
+  }, [from, isAuthenticated, onboardingComplete, active, navigate])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setBusy(true)
     try {
-      const result = await login(slug.trim(), username.trim(), password)
+      const result = await login(username.trim(), password)
       if (result.ok) {
         setPassword('')
-        navigate(from === '/login' ? '/home' : from, { replace: true })
+        navigate('/', { replace: true })
       } else {
         setError(result.error ?? 'Giriş başarısız.')
       }
@@ -48,7 +55,7 @@ export function LoginPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>Yönetici girişi</h1>
-        <p className={styles.subtitle}>İşletme kısa adresiniz ve hesabınızla giriş yapın</p>
+        <p className={styles.subtitle}>Kullanıcı adınız ve şifrenizle panele giriş yapın</p>
 
         <Button
           type="button"
@@ -90,7 +97,7 @@ export function LoginPage() {
         </Button>
 
         <div className={styles.divider} role="separator">
-          veya e-posta ile
+          veya kullanıcı adı ile
         </div>
 
         <form
@@ -99,24 +106,6 @@ export function LoginPage() {
           autoComplete="on"
           method="post"
         >
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="biz-slug">
-              İşletme kısa adresi
-            </label>
-            <input
-              id="biz-slug"
-              name="business_slug"
-              className={styles.input}
-              type="text"
-              autoComplete="organization"
-              placeholder="ornek: benim-kafe"
-              required
-              maxLength={64}
-              value={slug}
-              onChange={(ev) => setSlug(ev.target.value)}
-              disabled={busy}
-            />
-          </div>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="admin-user">
               Kullanıcı adı
@@ -166,16 +155,12 @@ export function LoginPage() {
         <p className={styles.switchRow}>
           Hesabınız yok mu?{' '}
           <Link className={styles.link} to="/register">
-            İşletme kaydı oluşturun
+            Kayıt olun
           </Link>
         </p>
 
         <p className={styles.hint}>
-          Müşteri menüsü bağlantısı:{' '}
-          <code className={styles.mono}>
-            /menu?isletme=
-            {slug.trim() ? slug.trim().toLowerCase() : 'kisa-adresiniz'}
-          </code>
+          Müşteri menüsü, işletmeniz onaylandıktan sonra size verilen kısa adres ile açılır.
         </p>
       </div>
     </div>

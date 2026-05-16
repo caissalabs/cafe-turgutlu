@@ -7,12 +7,16 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import styles from './LoginPage.module.css'
 
 export function RegisterPage() {
-  useDocumentTitle('CafeNET — İşletme kaydı')
-  const { isAuthenticated, register, signInWithGoogle } = useAuth()
+  useDocumentTitle('CafeNET — Kayıt')
+  const {
+    isAuthenticated,
+    register,
+    signInWithGoogle,
+    onboardingComplete,
+    active,
+  } = useAuth()
   const navigate = useNavigate()
 
-  const [businessName, setBusinessName] = useState('')
-  const [slug, setSlug] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -20,10 +24,11 @@ export function RegisterPage() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/home', { replace: true })
-    }
-  }, [isAuthenticated, navigate])
+    if (!isAuthenticated) return
+    if (!onboardingComplete) navigate('/onboarding', { replace: true })
+    else if (!active) navigate('/beklemede', { replace: true })
+    else navigate('/', { replace: true })
+  }, [isAuthenticated, onboardingComplete, active, navigate])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -37,15 +42,13 @@ export function RegisterPage() {
     setBusy(true)
     try {
       const result = await register({
-        businessName,
-        slug,
         username,
         password,
       })
       if (result.ok) {
         setPassword('')
         setConfirmPassword('')
-        navigate('/home', { replace: true })
+        navigate('/', { replace: true })
       } else {
         setError(result.error ?? 'Kayıt başarısız.')
       }
@@ -57,9 +60,9 @@ export function RegisterPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>İşletme kaydı</h1>
+        <h1 className={styles.title}>Kayıt ol</h1>
         <p className={styles.subtitle}>
-          Yeni bir işletme ve yönetici hesabı oluşturun. Kısa adres müşteri menü bağlantısında kullanılır.
+          Önce hesap oluşturun; işletme bilgilerini bir sonraki adımda gireceksiniz.
         </p>
 
         <Button
@@ -102,47 +105,13 @@ export function RegisterPage() {
         </Button>
 
         <div className={styles.divider} role="separator">
-          veya e-posta ile
+          veya kullanıcı adı ile
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit} autoComplete="on">
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="reg-name">
-              İşletme adı
-            </label>
-            <input
-              id="reg-name"
-              name="business_name"
-              className={styles.input}
-              type="text"
-              autoComplete="organization"
-              required
-              maxLength={120}
-              value={businessName}
-              onChange={(ev) => setBusinessName(ev.target.value)}
-              disabled={busy}
-            />
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="reg-slug">
-              Kısa adres (URL)
-            </label>
-            <input
-              id="reg-slug"
-              name="business_slug"
-              className={styles.input}
-              type="text"
-              placeholder="ornek: benim-kafe"
-              required
-              maxLength={64}
-              value={slug}
-              onChange={(ev) => setSlug(ev.target.value.toLowerCase())}
-              disabled={busy}
-            />
-          </div>
-          <div className={styles.field}>
             <label className={styles.label} htmlFor="reg-user">
-              Yönetici kullanıcı adı
+              Kullanıcı adı
             </label>
             <input
               id="reg-user"
@@ -201,7 +170,7 @@ export function RegisterPage() {
           ) : null}
 
           <Button type="submit" disabled={busy}>
-            {busy ? 'Kaydediliyor…' : 'Kayıt oluştur'}
+            {busy ? 'Kaydediliyor…' : 'Hesap oluştur'}
           </Button>
         </form>
 
@@ -210,11 +179,6 @@ export function RegisterPage() {
           <Link className={styles.link} to="/login">
             Giriş yapın
           </Link>
-        </p>
-
-        <p className={styles.hint}>
-          Kayıt sonrası müşterileriniz menüye{' '}
-          <code className={styles.mono}>/menu?isletme=kisa-adresiniz</code> ile erişebilir.
         </p>
       </div>
     </div>

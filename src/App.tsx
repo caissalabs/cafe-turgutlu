@@ -1,6 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import {
+  FullPanelGate,
+  OnboardingGate,
+  PendingGate,
+  RequirePanelAuth,
+} from '@/components/auth/PanelGates'
 import { Layout } from '@/components/Layout'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AuthProvider } from '@/contexts/AuthProvider'
 import { useAuth } from '@/hooks/useAuth'
 import { MenuEditorPage } from '@/pages/MenuEditorPage'
@@ -9,13 +14,17 @@ import { PaymentHistoryPage } from '@/pages/PaymentHistoryPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MenuPage } from '@/pages/MenuPage'
+import { OnboardingPage } from '@/pages/OnboardingPage'
 import { OrderSuccessPage } from '@/pages/OrderSuccessPage'
-import { RegisterGooglePage } from '@/pages/RegisterGooglePage'
+import { PendingApprovalPage } from '@/pages/PendingApprovalPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 
-function RootRedirect() {
-  const { isAuthenticated } = useAuth()
-  return <Navigate to={isAuthenticated ? '/home' : '/login'} replace />
+function PostAuthNavigate() {
+  const { isAuthenticated, onboardingComplete, active } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (!onboardingComplete) return <Navigate to="/onboarding" replace />
+  if (!active) return <Navigate to="/beklemede" replace />
+  return <Navigate to="/home" replace />
 }
 
 export default function App() {
@@ -25,11 +34,21 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/register/google" element={<RegisterGooglePage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/menu/tamamlandi" element={<OrderSuccessPage />} />
-          <Route path="/menu" element={<MenuPage />} />
-          <Route element={<ProtectedRoute />}>
+
+          <Route element={<RequirePanelAuth />}>
+            <Route element={<OnboardingGate />}>
+              <Route path="/onboarding" element={<OnboardingPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<RequirePanelAuth />}>
+            <Route element={<PendingGate />}>
+              <Route path="/beklemede" element={<PendingApprovalPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<FullPanelGate />}>
             <Route path="/home" element={<Layout />}>
               <Route index element={<AdminHomePage />} />
               <Route path="odeme-gecmisi" element={<PaymentHistoryPage />} />
@@ -37,8 +56,12 @@ export default function App() {
               <Route path="menu/onizleme" element={<MenuPage variant="staff" />} />
             </Route>
           </Route>
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="*" element={<RootRedirect />} />
+
+          <Route path="/menu/tamamlandi" element={<OrderSuccessPage />} />
+          <Route path="/menu" element={<MenuPage />} />
+
+          <Route path="/" element={<PostAuthNavigate />} />
+          <Route path="*" element={<PostAuthNavigate />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

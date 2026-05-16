@@ -1,5 +1,6 @@
 -- Çok kiracılı işletmeler: businesses + giriş (pgcrypto) + tüm cafe_* tablolarına business_id.
--- SQL Editor'de bir kez çalıştırın. Mevcut veriyi "Varsayılan işletme" altında toplar.
+-- SQL Editor'de çalıştırın. Ardından mutlaka supabase-onboarding-active-flow.sql dosyasını uygulayın
+-- (login_user, register_user, active/onboarding, menü slug çözümlemesi).
 --
 -- Varsayılan işletme UUID (mevcut tek işletmeli veriyi bağlamak için):
 --   a0000000-0000-4000-8000-000000000001
@@ -15,6 +16,9 @@ create table if not exists public.businesses (
   id uuid primary key default gen_random_uuid(),
   name text not null default '',
   slug text not null unique,
+  manager_display_name text not null default '',
+  active boolean not null default false,
+  onboarding_complete boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -27,6 +31,9 @@ create table if not exists public.business_users (
 );
 
 create index if not exists business_users_business_idx on public.business_users (business_id);
+
+create unique index if not exists business_users_username_lower_uq
+  on public.business_users (lower(trim(username)));
 
 alter table public.businesses enable row level security;
 alter table public.business_users enable row level security;
@@ -79,7 +86,12 @@ stable
 security definer
 set search_path = public
 as $$
-  select id from public.businesses where slug = lower(trim(p_slug)) limit 1;
+  select id
+  from public.businesses
+  where slug = lower(trim(p_slug))
+    and active = true
+    and onboarding_complete = true
+  limit 1;
 $$;
 
 grant execute on function public.resolve_business_id_by_slug(text) to anon;
@@ -122,11 +134,14 @@ grant execute on function public.register_business(text, text, text, text) to an
 grant execute on function public.register_business(text, text, text, text) to authenticated;
 
 -- ── Varsayılan işletme (mevcut veriyi buraya bağlar) ──
-insert into public.businesses (id, name, slug)
+insert into public.businesses (id, name, slug, manager_display_name, active, onboarding_complete)
 values (
   'a0000000-0000-4000-8000-000000000001',
   'Varsayılan işletme',
-  'default'
+  'default',
+  '',
+  true,
+  true
 )
 on conflict (slug) do nothing;
 
