@@ -74,8 +74,7 @@ export function Layout({ children }: LayoutProps) {
               type="button"
               className={styles.logout}
               onClick={() => {
-                logout()
-                navigate('/login', { replace: true })
+                void logout().then(() => navigate('/login', { replace: true }))
               }}
             >
               Çıkış

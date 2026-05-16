@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -12,10 +13,13 @@ import {
   ADMIN_SESSION_META_KEY,
   ADMIN_SESSION_TTL_MS,
 } from '@/constants/auth'
-import { DEFAULT_BUSINESS_SLUG, LOCAL_FALLBACK_BUSINESS_ID } from '@/constants/business'
-import { AuthContext, type AuthContextValue } from '@/contexts/auth-context'
+import {
+  AuthContext,
+  type AuthContextValue,
+  type RegisterGoogleBusinessInput,
+  type RegisterInput,
+} from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabaseClient'
-import { timingSafeEqual } from '@/utils/timingSafeEqual'
 
 type SessionMeta = { exp: number; businessId: string }
 
@@ -41,10 +45,44 @@ function readStoredSession(): { ok: boolean; businessId: string | null } {
   }
 }
 
-let failedAttempts = 0
-let lockUntil = 0
+function commitSession(businessId: string) {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  const token = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  const exp = Date.now() + ADMIN_SESSION_TTL_MS
+  sessionStorage.setItem(ADMIN_SESSION_KEY, token)
+  sessionStorage.setItem(
+    ADMIN_SESSION_META_KEY,
+    JSON.stringify({ exp, businessId } satisfies SessionMeta),
+  )
+}
+
+function oauthRedirectBase(): string {
+  const env = import.meta.env.VITE_SITE_URL?.trim()
+  if (env) return env.replace(/\/$/, '')
+  if (typeof window !== 'undefined') return window.location.origin.replace(/\/$/, '')
+  return ''
+}
+
+let loginFailedAttempts = 0
+let loginLockUntil = 0
+
+let registerFailedAttempts = 0
+let registerLockUntil = 0
+
+function rpcErrorMessage(err: { message?: string } | null): string {
+  const raw = err?.message ?? ''
+  if (raw.includes('Geçersiz işletme')) return 'İşletme adı, kısa adres veya şifre geçersiz. Şifre en az 8 karakter olmalıdır.'
+  if (raw.includes('zaten kullanılıyor')) return 'Bu kısa adres veya kullanıcı adı zaten kullanılıyor.'
+  if (raw.includes('Bu kısa adres zaten')) return 'Bu kısa adres zaten kullanılıyor.'
+  if (raw.includes('Bu Google hesabı zaten')) return 'Bu Google hesabı zaten bir işletmeye bağlı.'
+  if (raw.includes('Oturum gerekli')) return 'Oturum süresi dolmuş. Tekrar Google ile giriş yapın.'
+  return raw.trim() || 'İşlem sırasında bir hata oluştu.'
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const skipClearSessionOnSignOutRef = useRef(false)
+
   const initial = readStoredSession()
   const [isAuthenticated, setIsAuthenticated] = useState(initial.ok)
   const [businessId, setBusinessId] = useState<string | null>(initial.businessId)
@@ -60,107 +98,240 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(id)
   }, [])
 
-  const logout = useCallback(() => {
+  useEffect(() => {
+    let cancelled = false
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return
+
+      if (event === 'SIGNED_OUT') {
+        if (!skipClearSessionOnSignOutRef.current) {
+          clearStoredSession()
+        }
+        setIsAuthenticated(false)
+        setBusinessId(null)
+        return
+      }
+
+      if (event === 'INITIAL_SESSION') {
+        const stored = readStoredSession()
+        if (stored.ok && stored.businessId) {
+          setIsAuthenticated(true)
+          setBusinessId(stored.businessId)
+        }
+
+        if (session?.user) {
+          const { data, error } = await supabase.rpc('get_business_id_for_auth_user')
+          if (!cancelled && !error && typeof data === 'string') {
+            commitSession(data)
+            setIsAuthenticated(true)
+            setBusinessId(data)
+          }
+        }
+        return
+      }
+
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        const { data, error } = await supabase.rpc('get_business_id_for_auth_user')
+        if (!cancelled && !error && typeof data === 'string') {
+          commitSession(data)
+          setIsAuthenticated(true)
+          setBusinessId(data)
+        }
+      }
+    })
+
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const logout = useCallback(async () => {
     clearStoredSession()
     setIsAuthenticated(false)
     setBusinessId(null)
+    await supabase.auth.signOut()
   }, [])
 
-  const login = useCallback(async (username: string, password: string) => {
-    if (Date.now() < lockUntil) {
-      const sec = Math.ceil((lockUntil - Date.now()) / 1000)
+  const login = useCallback(async (slug: string, username: string, password: string) => {
+    if (Date.now() < loginLockUntil) {
+      const sec = Math.ceil((loginLockUntil - Date.now()) / 1000)
       return {
         ok: false,
         error: `Çok fazla hatalı deneme. Yaklaşık ${sec} saniye sonra tekrar deneyin.`,
       }
     }
 
+    const s = slug.trim().toLowerCase()
     const user = username.trim()
-    /** Yönetici girişi tek işletmeye bağlı; slug env ile değiştirilebilir (çok kiracılı hazırlık). */
-    const adminBusinessSlug =
-      (import.meta.env.VITE_ADMIN_BUSINESS_SLUG as string | undefined)?.trim().toLowerCase() ||
-      DEFAULT_BUSINESS_SLUG
-
-    if (supabase) {
-      if (!user || !password) {
-        return { ok: false, error: 'Kullanıcı adı ve şifre gerekli.' }
-      }
-      const { data, error } = await supabase.rpc('login_business', {
-        p_slug: adminBusinessSlug,
-        p_username: user,
-        p_password: password,
-      })
-      if (error) {
-        console.error(error)
-        return { ok: false, error: 'Giriş sırasında bir hata oluştu.' }
-      }
-      const bid = typeof data === 'string' ? data : null
-      if (!bid) {
-        failedAttempts += 1
-        if (failedAttempts >= ADMIN_LOCKOUT_ATTEMPTS) {
-          lockUntil = Date.now() + ADMIN_LOCKOUT_MS
-          failedAttempts = 0
-        }
-        await new Promise((r) => setTimeout(r, 350 + Math.random() * 250))
-        return { ok: false, error: 'Kullanıcı adı veya şifre hatalı.' }
-      }
-      failedAttempts = 0
-      lockUntil = 0
-      const bytes = new Uint8Array(32)
-      crypto.getRandomValues(bytes)
-      const token = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
-      const exp = Date.now() + ADMIN_SESSION_TTL_MS
-      sessionStorage.setItem(ADMIN_SESSION_KEY, token)
-      sessionStorage.setItem(
-        ADMIN_SESSION_META_KEY,
-        JSON.stringify({ exp, businessId: bid } satisfies SessionMeta),
-      )
-      setBusinessId(bid)
-      setIsAuthenticated(true)
-      return { ok: true }
+    if (!s || !user || !password) {
+      return { ok: false, error: 'Kısa adres, kullanıcı adı ve şifre gerekli.' }
     }
 
-    /* Yerel mod: .env ile tek işletme */
-    const expectedUser = import.meta.env.VITE_ADMIN_USERNAME ?? ''
-    const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD ?? ''
-
-    if (!expectedUser || !expectedPass) {
-      console.error(
-        'Yerel mod: VITE_ADMIN_USERNAME ve VITE_ADMIN_PASSWORD .env.local içinde tanımlı olmalı.',
-      )
-      return {
-        ok: false,
-        error: 'Sunucu yapılandırması eksik. Yöneticiye başvurun.',
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (sessionData.session) {
+      skipClearSessionOnSignOutRef.current = true
+      try {
+        await supabase.auth.signOut()
+      } finally {
+        skipClearSessionOnSignOutRef.current = false
       }
     }
 
-    const userOk = timingSafeEqual(user, expectedUser)
-    const passOk = timingSafeEqual(password, expectedPass)
-
-    if (!userOk || !passOk) {
-      failedAttempts += 1
-      if (failedAttempts >= ADMIN_LOCKOUT_ATTEMPTS) {
-        lockUntil = Date.now() + ADMIN_LOCKOUT_MS
-        failedAttempts = 0
+    const { data, error } = await supabase.rpc('login_business', {
+      p_slug: s,
+      p_username: user,
+      p_password: password,
+    })
+    if (error) {
+      console.error(error)
+      return { ok: false, error: 'Giriş sırasında bir hata oluştu.' }
+    }
+    const bid = typeof data === 'string' ? data : null
+    if (!bid) {
+      loginFailedAttempts += 1
+      if (loginFailedAttempts >= ADMIN_LOCKOUT_ATTEMPTS) {
+        loginLockUntil = Date.now() + ADMIN_LOCKOUT_MS
+        loginFailedAttempts = 0
       }
       await new Promise((r) => setTimeout(r, 350 + Math.random() * 250))
-      return { ok: false, error: 'Kullanıcı adı veya şifre hatalı.' }
+      return { ok: false, error: 'Kısa adres, kullanıcı adı veya şifre hatalı.' }
+    }
+    loginFailedAttempts = 0
+    loginLockUntil = 0
+    commitSession(bid)
+    setBusinessId(bid)
+    setIsAuthenticated(true)
+    return { ok: true }
+  }, [])
+
+  const register = useCallback(async (input: RegisterInput) => {
+    if (Date.now() < registerLockUntil) {
+      const sec = Math.ceil((registerLockUntil - Date.now()) / 1000)
+      return {
+        ok: false,
+        error: `Çok fazla deneme. Yaklaşık ${sec} saniye sonra tekrar deneyin.`,
+      }
     }
 
-    failedAttempts = 0
-    lockUntil = 0
-    const bytes = new Uint8Array(32)
-    crypto.getRandomValues(bytes)
-    const token = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
-    const exp = Date.now() + ADMIN_SESSION_TTL_MS
-    const bid =
-      (import.meta.env.VITE_LOCAL_BUSINESS_ID as string | undefined)?.trim() ||
-      LOCAL_FALLBACK_BUSINESS_ID
-    sessionStorage.setItem(ADMIN_SESSION_KEY, token)
-    sessionStorage.setItem(
-      ADMIN_SESSION_META_KEY,
-      JSON.stringify({ exp, businessId: bid } satisfies SessionMeta),
-    )
+    const businessName = input.businessName.trim()
+    const slug = input.slug.trim().toLowerCase().replace(/\s+/g, '-')
+    const username = input.username.trim()
+    const password = input.password
+
+    if (!businessName || !slug || !username || !password) {
+      return { ok: false, error: 'Tüm alanları doldurun.' }
+    }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length < 2) {
+      return {
+        ok: false,
+        error: 'Kısa adres yalnızca küçük harf, rakam ve tire içerebilir (ör. benim-kafe).',
+      }
+    }
+    if (username.length < 2) {
+      return { ok: false, error: 'Kullanıcı adı en az 2 karakter olmalıdır.' }
+    }
+    if (password.length < 8) {
+      return { ok: false, error: 'Şifre en az 8 karakter olmalıdır.' }
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (sessionData.session) {
+      skipClearSessionOnSignOutRef.current = true
+      try {
+        await supabase.auth.signOut()
+      } finally {
+        skipClearSessionOnSignOutRef.current = false
+      }
+    }
+
+    const { data, error } = await supabase.rpc('register_business', {
+      p_name: businessName,
+      p_slug: slug,
+      p_username: username,
+      p_password: password,
+    })
+
+    if (error) {
+      console.error(error)
+      registerFailedAttempts += 1
+      if (registerFailedAttempts >= ADMIN_LOCKOUT_ATTEMPTS) {
+        registerLockUntil = Date.now() + ADMIN_LOCKOUT_MS
+        registerFailedAttempts = 0
+      }
+      return { ok: false, error: rpcErrorMessage(error) }
+    }
+
+    const bid = typeof data === 'string' ? data : null
+    if (!bid) {
+      return { ok: false, error: 'Kayıt tamamlanamadı.' }
+    }
+
+    registerFailedAttempts = 0
+    registerLockUntil = 0
+    commitSession(bid)
+    setBusinessId(bid)
+    setIsAuthenticated(true)
+    return { ok: true }
+  }, [])
+
+  const signInWithGoogle = useCallback(async () => {
+    clearStoredSession()
+    setIsAuthenticated(false)
+    setBusinessId(null)
+    await supabase.auth.signOut()
+
+    const base = oauthRedirectBase()
+    if (!base) {
+      return { ok: false, error: 'Site adresi alınamadı.' }
+    }
+    const redirectTo = `${base}/auth/callback`
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+      },
+    })
+    if (error) {
+      console.error(error)
+      return { ok: false, error: error.message || 'Google ile giriş başlatılamadı.' }
+    }
+    return { ok: true }
+  }, [])
+
+  const registerBusinessWithGoogle = useCallback(async (input: RegisterGoogleBusinessInput) => {
+    const businessName = input.businessName.trim()
+    const slug = input.slug.trim().toLowerCase().replace(/\s+/g, '-')
+
+    if (!businessName || !slug) {
+      return { ok: false, error: 'İşletme adı ve kısa adres gerekli.' }
+    }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length < 2) {
+      return {
+        ok: false,
+        error: 'Kısa adres yalnızca küçük harf, rakam ve tire içerebilir (ör. benim-kafe).',
+      }
+    }
+
+    const { data, error } = await supabase.rpc('register_business_with_google', {
+      p_name: businessName,
+      p_slug: slug,
+    })
+
+    if (error) {
+      console.error(error)
+      return { ok: false, error: rpcErrorMessage(error) }
+    }
+
+    const bid = typeof data === 'string' ? data : null
+    if (!bid) {
+      return { ok: false, error: 'Kayıt tamamlanamadı.' }
+    }
+
+    commitSession(bid)
     setBusinessId(bid)
     setIsAuthenticated(true)
     return { ok: true }
@@ -171,9 +342,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated,
       businessId,
       login,
+      register,
+      signInWithGoogle,
+      registerBusinessWithGoogle,
       logout,
     }),
-    [isAuthenticated, businessId, login, logout],
+    [
+      isAuthenticated,
+      businessId,
+      login,
+      register,
+      signInWithGoogle,
+      registerBusinessWithGoogle,
+      logout,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -49,8 +49,8 @@ declare
   v_slug text := lower(trim(p_slug));
   v_user text := lower(trim(p_username));
 begin
-  if length(v_slug) < 2 or length(v_user) < 2 or length(p_password) < 4 then
-    raise exception 'Geçersiz işletme, kullanıcı adı veya şifre';
+  if length(v_slug) < 2 or length(v_user) < 2 or length(p_password) < 8 then
+    raise exception 'Geçersiz işletme, kullanıcı adı veya şifre (şifre en az 8 karakter)';
   end if;
   insert into public.businesses (name, slug)
   values (trim(p_name), v_slug)

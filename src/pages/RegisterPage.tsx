@@ -1,43 +1,53 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import styles from './LoginPage.module.css'
 
-type LocationState = { from?: { pathname?: string } }
-
-export function LoginPage() {
-  useDocumentTitle('CafeNET — Yönetici girişi')
-  const { isAuthenticated, login, signInWithGoogle } = useAuth()
+export function RegisterPage() {
+  useDocumentTitle('CafeNET — İşletme kaydı')
+  const { isAuthenticated, register, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const from = (location.state as LocationState | null)?.from?.pathname ?? '/home'
 
+  const [businessName, setBusinessName] = useState('')
   const [slug, setSlug] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from === '/login' ? '/home' : from, { replace: true })
+      navigate('/home', { replace: true })
     }
-  }, [from, isAuthenticated, navigate])
+  }, [isAuthenticated, navigate])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+
+    if (password !== confirmPassword) {
+      setError('Şifreler eşleşmiyor.')
+      return
+    }
+
     setBusy(true)
     try {
-      const result = await login(slug.trim(), username.trim(), password)
+      const result = await register({
+        businessName,
+        slug,
+        username,
+        password,
+      })
       if (result.ok) {
         setPassword('')
-        navigate(from === '/login' ? '/home' : from, { replace: true })
+        setConfirmPassword('')
+        navigate('/home', { replace: true })
       } else {
-        setError(result.error ?? 'Giriş başarısız.')
+        setError(result.error ?? 'Kayıt başarısız.')
       }
     } finally {
       setBusy(false)
@@ -47,8 +57,10 @@ export function LoginPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Yönetici girişi</h1>
-        <p className={styles.subtitle}>İşletme kısa adresiniz ve hesabınızla giriş yapın</p>
+        <h1 className={styles.title}>İşletme kaydı</h1>
+        <p className={styles.subtitle}>
+          Yeni bir işletme ve yönetici hesabı oluşturun. Kısa adres müşteri menü bağlantısında kullanılır.
+        </p>
 
         <Button
           type="button"
@@ -60,7 +72,7 @@ export function LoginPage() {
             setBusy(true)
             try {
               const result = await signInWithGoogle()
-              if (!result.ok) setError(result.error ?? 'Google ile giriş başlatılamadı.')
+              if (!result.ok) setError(result.error ?? 'Google ile kayıt başlatılamadı.')
             } finally {
               setBusy(false)
             }
@@ -85,7 +97,7 @@ export function LoginPage() {
                 d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
               />
             </svg>
-            Google ile devam et
+            Google ile kayıt ol
           </span>
         </Button>
 
@@ -93,36 +105,47 @@ export function LoginPage() {
           veya e-posta ile
         </div>
 
-        <form
-          className={styles.form}
-          onSubmit={handleSubmit}
-          autoComplete="on"
-          method="post"
-        >
+        <form className={styles.form} onSubmit={handleSubmit} autoComplete="on">
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="biz-slug">
-              İşletme kısa adresi
+            <label className={styles.label} htmlFor="reg-name">
+              İşletme adı
             </label>
             <input
-              id="biz-slug"
-              name="business_slug"
+              id="reg-name"
+              name="business_name"
               className={styles.input}
               type="text"
               autoComplete="organization"
-              placeholder="ornek: benim-kafe"
               required
-              maxLength={64}
-              value={slug}
-              onChange={(ev) => setSlug(ev.target.value)}
+              maxLength={120}
+              value={businessName}
+              onChange={(ev) => setBusinessName(ev.target.value)}
               disabled={busy}
             />
           </div>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="admin-user">
-              Kullanıcı adı
+            <label className={styles.label} htmlFor="reg-slug">
+              Kısa adres (URL)
             </label>
             <input
-              id="admin-user"
+              id="reg-slug"
+              name="business_slug"
+              className={styles.input}
+              type="text"
+              placeholder="ornek: benim-kafe"
+              required
+              maxLength={64}
+              value={slug}
+              onChange={(ev) => setSlug(ev.target.value.toLowerCase())}
+              disabled={busy}
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="reg-user">
+              Yönetici kullanıcı adı
+            </label>
+            <input
+              id="reg-user"
               name="username"
               className={styles.input}
               type="text"
@@ -135,19 +158,38 @@ export function LoginPage() {
             />
           </div>
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="admin-pass">
+            <label className={styles.label} htmlFor="reg-pass">
               Şifre
             </label>
             <input
-              id="admin-pass"
+              id="reg-pass"
               name="password"
               className={styles.input}
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
+              minLength={8}
               maxLength={256}
               value={password}
               onChange={(ev) => setPassword(ev.target.value)}
+              disabled={busy}
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="reg-pass2">
+              Şifre (tekrar)
+            </label>
+            <input
+              id="reg-pass2"
+              name="confirm_password"
+              className={styles.input}
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              maxLength={256}
+              value={confirmPassword}
+              onChange={(ev) => setConfirmPassword(ev.target.value)}
               disabled={busy}
             />
           </div>
@@ -159,23 +201,20 @@ export function LoginPage() {
           ) : null}
 
           <Button type="submit" disabled={busy}>
-            {busy ? 'Giriş yapılıyor…' : 'Giriş yap'}
+            {busy ? 'Kaydediliyor…' : 'Kayıt oluştur'}
           </Button>
         </form>
 
         <p className={styles.switchRow}>
-          Hesabınız yok mu?{' '}
-          <Link className={styles.link} to="/register">
-            İşletme kaydı oluşturun
+          Zaten hesabınız var mı?{' '}
+          <Link className={styles.link} to="/login">
+            Giriş yapın
           </Link>
         </p>
 
         <p className={styles.hint}>
-          Müşteri menüsü bağlantısı:{' '}
-          <code className={styles.mono}>
-            /menu?isletme=
-            {slug.trim() ? slug.trim().toLowerCase() : 'kisa-adresiniz'}
-          </code>
+          Kayıt sonrası müşterileriniz menüye{' '}
+          <code className={styles.mono}>/menu?isletme=kisa-adresiniz</code> ile erişebilir.
         </p>
       </div>
     </div>

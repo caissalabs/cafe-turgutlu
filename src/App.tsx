@@ -6,9 +6,12 @@ import { useAuth } from '@/hooks/useAuth'
 import { MenuEditorPage } from '@/pages/MenuEditorPage'
 import { AdminHomePage } from '@/pages/AdminHomePage'
 import { PaymentHistoryPage } from '@/pages/PaymentHistoryPage'
+import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MenuPage } from '@/pages/MenuPage'
 import { OrderSuccessPage } from '@/pages/OrderSuccessPage'
+import { RegisterGooglePage } from '@/pages/RegisterGooglePage'
+import { RegisterPage } from '@/pages/RegisterPage'
 
 function RootRedirect() {
   const { isAuthenticated } = useAuth()
@@ -21,6 +24,9 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/register/google" element={<RegisterGooglePage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/menu/tamamlandi" element={<OrderSuccessPage />} />
           <Route path="/menu" element={<MenuPage />} />
           <Route element={<ProtectedRoute />}>

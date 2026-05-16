@@ -1,10 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import type { CafeOrder, CafeOrderRow, OrderLine } from '@/types/order'
 
-function orderStorageKey(businessId: string): string {
-  return `cafe-turgutlu-orders::${businessId}`
-}
-
 function mapRow(row: CafeOrderRow): CafeOrder {
   return {
     id: row.id,
@@ -15,62 +11,29 @@ function mapRow(row: CafeOrderRow): CafeOrder {
   }
 }
 
-function readLocalOrders(businessId: string): CafeOrder[] {
-  try {
-    const raw = localStorage.getItem(orderStorageKey(businessId))
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter(
-        (o): o is CafeOrder =>
-          typeof o === 'object' &&
-          o !== null &&
-          'id' in o &&
-          'tableNumber' in o &&
-          'lines' in o &&
-          'totalTry' in o &&
-          'createdAt' in o,
-      )
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  } catch {
-    return []
-  }
-}
-
-function writeLocalOrders(businessId: string, orders: CafeOrder[]) {
-  localStorage.setItem(orderStorageKey(businessId), JSON.stringify(orders))
-}
-
 export async function fetchAllOrders(businessId: string): Promise<CafeOrder[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('cafe_orders')
-      .select('*')
-      .eq('business_id', businessId)
-      .order('created_at', { ascending: false })
+  const { data, error } = await supabase
+    .from('cafe_orders')
+    .select('*')
+    .eq('business_id', businessId)
+    .order('created_at', { ascending: false })
 
-    if (error) throw error
-    return ((data ?? []) as CafeOrderRow[]).map(mapRow)
-  }
-  return readLocalOrders(businessId)
+  if (error) throw error
+  return ((data ?? []) as CafeOrderRow[]).map(mapRow)
 }
 
 export async function fetchOrdersByTable(
   businessId: string,
   tableNumber: number,
 ): Promise<CafeOrder[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('cafe_orders')
-      .select('*')
-      .eq('business_id', businessId)
-      .eq('table_number', tableNumber)
-      .order('created_at', { ascending: false })
-    if (error) throw error
-    return ((data ?? []) as CafeOrderRow[]).map(mapRow)
-  }
-  return readLocalOrders(businessId).filter((o) => o.tableNumber === tableNumber)
+  const { data, error } = await supabase
+    .from('cafe_orders')
+    .select('*')
+    .eq('business_id', businessId)
+    .eq('table_number', tableNumber)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return ((data ?? []) as CafeOrderRow[]).map(mapRow)
 }
 
 export async function transferOrdersBetweenTables(
@@ -79,36 +42,24 @@ export async function transferOrdersBetweenTables(
   toTableNumber: number,
 ): Promise<void> {
   if (fromTableNumber === toTableNumber) return
-  if (supabase) {
-    const { error } = await supabase
-      .from('cafe_orders')
-      .update({ table_number: toTableNumber })
-      .eq('business_id', businessId)
-      .eq('table_number', fromTableNumber)
-    if (error) throw error
-    return
-  }
-  const orders = readLocalOrders(businessId).map((o) =>
-    o.tableNumber === fromTableNumber ? { ...o, tableNumber: toTableNumber } : o,
-  )
-  writeLocalOrders(businessId, orders)
+  const { error } = await supabase
+    .from('cafe_orders')
+    .update({ table_number: toTableNumber })
+    .eq('business_id', businessId)
+    .eq('table_number', fromTableNumber)
+  if (error) throw error
 }
 
 export async function deleteOrdersForTable(
   businessId: string,
   tableNumber: number,
 ): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase
-      .from('cafe_orders')
-      .delete()
-      .eq('business_id', businessId)
-      .eq('table_number', tableNumber)
-    if (error) throw error
-    return
-  }
-  const next = readLocalOrders(businessId).filter((o) => o.tableNumber !== tableNumber)
-  writeLocalOrders(businessId, next)
+  const { error } = await supabase
+    .from('cafe_orders')
+    .delete()
+    .eq('business_id', businessId)
+    .eq('table_number', tableNumber)
+  if (error) throw error
 }
 
 export async function submitOrder(
@@ -119,31 +70,18 @@ export async function submitOrder(
     totalTry: number
   },
 ): Promise<string> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('cafe_orders')
-      .insert({
-        business_id: businessId,
-        table_number: input.tableNumber,
-        lines: input.lines,
-        total_try: input.totalTry,
-      })
-      .select('id')
-      .single()
-    if (error) throw error
-    return (data as { id: string }).id
-  }
-
-  const id = crypto.randomUUID()
-  const order: CafeOrder = {
-    id,
-    tableNumber: input.tableNumber,
-    lines: input.lines,
-    totalTry: input.totalTry,
-    createdAt: new Date().toISOString(),
-  }
-  writeLocalOrders(businessId, [order, ...readLocalOrders(businessId)])
-  return id
+  const { data, error } = await supabase
+    .from('cafe_orders')
+    .insert({
+      business_id: businessId,
+      table_number: input.tableNumber,
+      lines: input.lines,
+      total_try: input.totalTry,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+  return (data as { id: string }).id
 }
 
 export async function updateOrder(
@@ -151,41 +89,21 @@ export async function updateOrder(
   orderId: string,
   patch: { lines: OrderLine[]; totalTry: number },
 ): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase
-      .from('cafe_orders')
-      .update({ lines: patch.lines, total_try: patch.totalTry })
-      .eq('id', orderId)
-      .eq('business_id', businessId)
-    if (error) throw error
-    return
-  }
-  const orders = readLocalOrders(businessId)
-  const idx = orders.findIndex((o) => o.id === orderId)
-  if (idx === -1) throw new Error('Sipariş bulunamadı.')
-  const next = [...orders]
-  next[idx] = {
-    ...next[idx]!,
-    lines: patch.lines,
-    totalTry: patch.totalTry,
-  }
-  writeLocalOrders(businessId, next)
+  const { error } = await supabase
+    .from('cafe_orders')
+    .update({ lines: patch.lines, total_try: patch.totalTry })
+    .eq('id', orderId)
+    .eq('business_id', businessId)
+  if (error) throw error
 }
 
 export async function deleteOrderById(businessId: string, orderId: string): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase
-      .from('cafe_orders')
-      .delete()
-      .eq('id', orderId)
-      .eq('business_id', businessId)
-    if (error) throw error
-    return
-  }
-  writeLocalOrders(
-    businessId,
-    readLocalOrders(businessId).filter((o) => o.id !== orderId),
-  )
+  const { error } = await supabase
+    .from('cafe_orders')
+    .delete()
+    .eq('id', orderId)
+    .eq('business_id', businessId)
+  if (error) throw error
 }
 
 export function subscribeOrders(
@@ -202,38 +120,22 @@ export function subscribeOrders(
 
   refresh()
 
-  if (supabase) {
-    const client = supabase
-    const channel = client
-      .channel(`cafe_orders_${businessId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'cafe_orders',
-          filter: `business_id=eq.${businessId}`,
-        },
-        () => refresh(),
-      )
-      .subscribe()
-
-    return () => {
-      cancelled = true
-      void client.removeChannel(channel)
-    }
-  }
-
-  const key = orderStorageKey(businessId)
-  const onStorage = (ev: StorageEvent) => {
-    if (ev.key === key) refresh()
-  }
-  window.addEventListener('storage', onStorage)
-  const interval = window.setInterval(refresh, 2500)
+  const channel = supabase
+    .channel(`cafe_orders_${businessId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'cafe_orders',
+        filter: `business_id=eq.${businessId}`,
+      },
+      () => refresh(),
+    )
+    .subscribe()
 
   return () => {
     cancelled = true
-    window.removeEventListener('storage', onStorage)
-    window.clearInterval(interval)
+    void supabase.removeChannel(channel)
   }
 }

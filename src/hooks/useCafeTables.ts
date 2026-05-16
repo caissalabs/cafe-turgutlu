@@ -44,10 +44,8 @@ export function useCafeTables(businessId: string | null) {
 
   useEffect(() => {
     if (!businessId) return () => {}
-    const client = supabase
-    if (!client) return () => {}
     const filter = `business_id=eq.${businessId}`
-    const channel = client
+    const channel = supabase
       .channel(`cafe_tables_${businessId}`)
       .on(
         'postgres_changes',
@@ -58,7 +56,7 @@ export function useCafeTables(businessId: string | null) {
       )
       .subscribe()
     return () => {
-      void client.removeChannel(channel)
+      void supabase.removeChannel(channel)
     }
   }, [businessId, load])
 

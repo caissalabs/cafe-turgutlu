@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { DEFAULT_BUSINESS_SLUG, LOCAL_FALLBACK_BUSINESS_ID } from '@/constants/business'
 import { supabase } from '@/lib/supabaseClient'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -31,18 +30,6 @@ export function usePublicBusinessId() {
 
     if (slug?.trim()) {
       const s = slug.trim().toLowerCase()
-      if (!supabase) {
-        if (s === DEFAULT_BUSINESS_SLUG || s === 'default') {
-          setBusinessId(LOCAL_FALLBACK_BUSINESS_ID)
-          setError(null)
-        } else {
-          setBusinessId(null)
-          setError('Yerel önizlemede işletme kodu olarak “default” kullanın.')
-        }
-        setResolving(false)
-        return
-      }
-
       setResolving(true)
       void supabase
         .rpc('resolve_business_id_by_slug', { p_slug: s })
