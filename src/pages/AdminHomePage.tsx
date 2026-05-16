@@ -6,13 +6,13 @@ import { useCafeMenu } from '@/hooks/useCafeMenu'
 import { useCafeTables } from '@/hooks/useCafeTables'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useNewOrderAttention } from '@/hooks/useNewOrderAttention'
-import { useOrders } from '@/hooks/useOrders'
+import { useOrdersFeed } from '@/hooks/useOrdersFeed'
 import styles from './AdminHomePage.module.css'
 
 export function AdminHomePage() {
   useDocumentTitle('CafeNET — Yönetici Paneli')
   const { businessId } = useAuth()
-  const { orders, loading, error, refreshOrders } = useOrders(businessId)
+  const { orders, loading, error, refreshOrders } = useOrdersFeed()
   const cafe = useCafeTables(businessId)
   const menu = useCafeMenu(businessId)
   const attention = useNewOrderAttention({

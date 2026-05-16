@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NewOrderAlertModal } from '@/components/NewOrderAlertModal'
+import { OrdersFeedProvider } from '@/contexts/OrdersFeedProvider'
 import { useAuth } from '@/hooks/useAuth'
+import { useMasalarAwayAlert } from '@/hooks/useMasalarAwayAlert'
 import { unlockCashRegisterAudio } from '@/utils/cashRegisterSound'
 import { unlockNewOrderNotificationAudio } from '@/utils/orderAlarmSound'
 import { cn } from '@/utils/cn'
@@ -11,9 +14,10 @@ type LayoutProps = {
   children?: ReactNode
 }
 
-export function Layout({ children }: LayoutProps) {
+function LayoutChrome({ children }: { children?: ReactNode }) {
   const { logout } = useAuth()
   const navigate = useNavigate()
+  const away = useMasalarAwayAlert()
 
   useEffect(() => {
     const warm = () => {
@@ -30,6 +34,13 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className={styles.shell}>
+      <NewOrderAlertModal
+        open={away.returnModalOpen}
+        tableNumbers={away.returnModalTables}
+        onDismiss={away.dismissReturnModal}
+        hint="Başka sekmede veya Menü / Ödeme gibi bir sayfadayken sipariş oluştu. Zil sesini durdurmak için Tamam'a basın."
+      />
+
       <header className={styles.header}>
         <div className={styles.inner}>
           <NavLink to="/home" className={styles.brand}>
@@ -37,15 +48,21 @@ export function Layout({ children }: LayoutProps) {
             <span className={styles.brandTag}>Yönetici Paneli</span>
           </NavLink>
           <nav className={styles.nav} aria-label="Yönetici Paneli">
-            <NavLink
-              to="/home"
-              end
-              className={({ isActive }) =>
-                cn(styles.navItem, isActive && styles.navItemActive)
-              }
-            >
-              Masalar
-            </NavLink>
+            <span className={styles.navItemBadgeWrap}>
+              <NavLink
+                to="/home"
+                end
+                aria-label={away.masalarBadge ? 'Masalar — yeni sipariş var' : undefined}
+                className={({ isActive }) =>
+                  cn(styles.navItem, isActive && styles.navItemActive)
+                }
+              >
+                Masalar
+              </NavLink>
+              {away.masalarBadge ? (
+                <span className={styles.navNewDot} title="Yeni sipariş" aria-hidden />
+              ) : null}
+            </span>
             <NavLink
               to="/home/odeme-gecmisi"
               className={({ isActive }) =>
@@ -99,5 +116,15 @@ export function Layout({ children }: LayoutProps) {
         </p>
       </footer>
     </div>
+  )
+}
+
+export function Layout({ children }: LayoutProps) {
+  const { businessId } = useAuth()
+
+  return (
+    <OrdersFeedProvider businessId={businessId}>
+      <LayoutChrome>{children}</LayoutChrome>
+    </OrdersFeedProvider>
   )
 }

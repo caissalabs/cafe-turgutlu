@@ -6,12 +6,15 @@ type NewOrderAlertModalProps = {
   open: boolean
   tableNumbers: number[]
   onDismiss: () => void
+  /** Varsayılan: zil / tamam metni */
+  hint?: string
 }
 
 export function NewOrderAlertModal({
   open,
   tableNumbers,
   onDismiss,
+  hint = 'Zil sesini durdurmak için Tamam\'a basın.',
 }: NewOrderAlertModalProps) {
   const titleId = useId()
 
@@ -53,7 +56,7 @@ export function NewOrderAlertModal({
           Yeni sipariş!
         </h2>
         <p className={styles.lead}>{label}</p>
-        <p className={styles.hint}>Zil sesini durdurmak için Tamam&apos;a basın.</p>
+        <p className={styles.hint}>{hint}</p>
         <button type="button" className={styles.ok} onClick={onDismiss}>
           Tamam
         </button>
