@@ -18,6 +18,7 @@ import { OnboardingPage } from '@/pages/OnboardingPage'
 import { OrderSuccessPage } from '@/pages/OrderSuccessPage'
 import { PendingApprovalPage } from '@/pages/PendingApprovalPage'
 import { RegisterPage } from '@/pages/RegisterPage'
+import { QrCodesPage } from '@/pages/QrCodesPage'
 
 function PostAuthNavigate() {
   const { isAuthenticated, onboardingComplete, active } = useAuth()
@@ -54,6 +55,7 @@ export default function App() {
               <Route path="odeme-gecmisi" element={<PaymentHistoryPage />} />
               <Route path="menu" element={<MenuEditorPage />} />
               <Route path="menu/onizleme" element={<MenuPage variant="staff" />} />
+              <Route path="qr-kodlari" element={<QrCodesPage />} />
             </Route>
           </Route>
 

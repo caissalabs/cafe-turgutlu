@@ -70,6 +70,14 @@ export function Layout({ children }: LayoutProps) {
             >
               Önizleme
             </NavLink>
+            <NavLink
+              to="/home/qr-kodlari"
+              className={({ isActive }) =>
+                cn(styles.navItem, isActive && styles.navItemActive)
+              }
+            >
+              QR kodlarım
+            </NavLink>
             <button
               type="button"
               className={styles.logout}

@@ -21,7 +21,7 @@ let ctx: AudioContext | null = null
 let decodedBuffer: AudioBuffer | null = null
 let decodePromise: Promise<AudioBuffer | null> | null = null
 let wantPlaying = false
-let retryIntervalId: ReturnType<typeof setInterval> | null = null
+let retryIntervalId: number | null = null
 let activeSource: AudioBufferSourceNode | null = null
 let activeGain: GainNode | null = null
 
