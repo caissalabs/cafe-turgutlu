@@ -32,6 +32,7 @@ export function useMasalarAwayAlert() {
   const baselineIdsRef = useRef<Set<string>>(new Set())
   const bootRef = useRef(true)
 
+  const [masalarBadge, setMasalarBadge] = useState(false)
   const [pendingTables, setPendingTables] = useState<number[]>([])
   const [returnModalOpen, setReturnModalOpen] = useState(false)
 
@@ -60,14 +61,27 @@ export function useMasalarAwayAlert() {
     if (newlyAdded.length === 0) return
 
     const tables = [...new Set(newlyAdded.map((o) => o.tableNumber))].sort((a, b) => a - b)
+    setMasalarBadge(true)
     setPendingTables((prev) => [...new Set([...prev, ...tables])].sort((a, b) => a - b))
     setReturnModalOpen(true)
     startOrderAlarm()
     baselineIdsRef.current = ids
   }, [orders, ordersLoading, viewingMasalar, masalarRouteButHidden])
 
+  /** Masalar görünür olunca rozeti kapat; header’dan gelince modal hâlâ açıksa kapat */
+  useEffect(() => {
+    if (!viewingMasalar) return
+    setMasalarBadge(false)
+    setReturnModalOpen((wasOpen) => {
+      if (wasOpen) stopOrderAlarm()
+      return false
+    })
+    setPendingTables([])
+  }, [viewingMasalar])
+
   const dismissReturnModal = useCallback(() => {
     stopOrderAlarm()
+    setMasalarBadge(false)
     setReturnModalOpen(false)
     setPendingTables([])
   }, [])
@@ -75,6 +89,7 @@ export function useMasalarAwayAlert() {
   useEffect(() => () => stopOrderAlarm(), [])
 
   return {
+    masalarBadge,
     returnModalOpen,
     returnModalTables: pendingTables,
     dismissReturnModal,

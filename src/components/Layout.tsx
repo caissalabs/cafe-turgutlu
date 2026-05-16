@@ -53,15 +53,21 @@ function LayoutChrome({ children }: { children?: ReactNode }) {
             <span className={styles.brandTag}>Yönetici Paneli</span>
           </NavLink>
           <nav className={styles.nav} aria-label="Yönetici Paneli">
-            <NavLink
-              to="/home"
-              end
-              className={({ isActive }) =>
-                cn(styles.navItem, isActive && styles.navItemActive)
-              }
-            >
-              Masalar
-            </NavLink>
+            <span className={styles.navItemBadgeWrap}>
+              <NavLink
+                to="/home"
+                end
+                aria-label={away.masalarBadge ? 'Masalar — yeni sipariş var' : undefined}
+                className={({ isActive }) =>
+                  cn(styles.navItem, isActive && styles.navItemActive)
+                }
+              >
+                Masalar
+              </NavLink>
+              {away.masalarBadge ? (
+                <span className={styles.navNewDot} title="Yeni sipariş" aria-hidden />
+              ) : null}
+            </span>
             <NavLink
               to="/home/odeme-gecmisi"
               className={({ isActive }) =>

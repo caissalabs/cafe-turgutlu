@@ -56,6 +56,24 @@
   gap: 0.5rem;
 }
 
+.navItemBadgeWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.navNewDot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc2626;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 92%, transparent);
+  pointer-events: none;
+}
+
 .navItem {
   padding: 0.45rem 0.75rem;
   border-radius: 8px;
