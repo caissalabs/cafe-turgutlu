@@ -21,6 +21,7 @@ import { RegisterPage } from '@/pages/RegisterPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { QrCodesPage } from '@/pages/QrCodesPage'
+import { AccountPage } from '@/pages/AccountPage'
 
 function PostAuthNavigate() {
   const { isAuthenticated, onboardingComplete, active } = useAuth()
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="menu" element={<MenuEditorPage />} />
               <Route path="menu/onizleme" element={<MenuPage variant="staff" />} />
               <Route path="qr-kodlari" element={<QrCodesPage />} />
+              <Route path="hesabim" element={<AccountPage />} />
             </Route>
           </Route>
 

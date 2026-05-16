@@ -116,6 +116,62 @@
   outline-offset: 2px;
 }
 
+.profileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.55rem 0.35rem 0.35rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--border) 28%, var(--surface));
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.profileLink:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.profileLinkActive {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+}
+
+.profileLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--accent) 88%, #000),
+    color-mix(in srgb, var(--accent) 55%, #1e293b)
+  );
+  flex-shrink: 0;
+}
+
+.profileName {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .main {
   flex: 1;
   max-width: 1180px;
@@ -161,10 +217,21 @@
   }
 
   .navItem,
-  .logout {
-    padding: 0.35rem 0.58rem;
+  .logout,
+  .profileLink {
+    padding: 0.35rem 0.58rem 0.35rem 0.35rem;
     font-size: 0.86rem;
     border-radius: 7px;
+  }
+
+  .avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.65rem;
+  }
+
+  .profileName {
+    max-width: 6.5rem;
   }
 
   .main {

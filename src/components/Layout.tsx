@@ -14,8 +14,15 @@ type LayoutProps = {
   children?: ReactNode
 }
 
+function panelAvatarLetters(username: string | null): string {
+  const u = username?.trim()
+  if (!u) return '?'
+  if (u.length <= 2) return u.toUpperCase()
+  return u.slice(0, 2).toUpperCase()
+}
+
 function LayoutChrome({ children }: { children?: ReactNode }) {
-  const { logout } = useAuth()
+  const { logout, panelUsername } = useAuth()
   const navigate = useNavigate()
   const away = useMasalarAwayAlert()
 
@@ -109,6 +116,20 @@ function LayoutChrome({ children }: { children?: ReactNode }) {
             >
               Çıkış
             </button>
+            <NavLink
+              to="/home/hesabim"
+              className={({ isActive }) =>
+                cn(styles.profileLink, isActive && styles.profileLinkActive)
+              }
+              aria-label="Hesabım"
+            >
+              <span className={styles.avatar} aria-hidden>
+                {panelAvatarLetters(panelUsername)}
+              </span>
+              <span className={styles.profileName}>
+                {panelUsername?.trim() || 'Hesap'}
+              </span>
+            </NavLink>
           </nav>
         </div>
       </header>
