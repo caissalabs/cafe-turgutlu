@@ -128,3 +128,395 @@
   white-space: nowrap;
   border: 0;
 }
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* KPI */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.kpiCard {
+  margin: 0;
+  padding: 1rem 1.05rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.kpiLabel {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.kpiValue {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+.kpiHint {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.25rem;
+  padding: 1rem 1.05rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--border) 14%, var(--surface));
+}
+
+.toolGroup {
+  display: grid;
+  gap: 0.45rem;
+  min-width: min(100%, 12rem);
+}
+
+.toolLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.segmentRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.segment,
+.segmentActive {
+  padding: 0.38rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--muted);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.segment:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.segmentActive {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+}
+
+.select {
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  max-width: 100%;
+}
+
+.toolActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.exportBtn {
+  padding: 0.48rem 0.95rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.exportBtn:hover {
+  background: var(--accent-hover);
+}
+
+.exportBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Ürün filtresi */
+.productFilter {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.productFilterSummary {
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.productFilterSummary::-webkit-details-marker {
+  display: none;
+}
+
+.productFilterHint {
+  margin: 0.65rem 0 0.75rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.filterBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--accent);
+}
+
+.productChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  max-height: 10rem;
+  overflow-y: auto;
+  padding: 0.15rem 0;
+}
+
+.chip,
+.chipOn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  cursor: pointer;
+  user-select: none;
+  background: color-mix(in srgb, var(--border) 20%, var(--surface));
+}
+
+.chipOn {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--text);
+}
+
+.chipInput {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.clearFilterBtn {
+  margin-top: 0.65rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.clearFilterBtn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.rangeSummary {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+/* İstatistikler */
+.statsSection {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.1rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--border) 12%, var(--surface));
+}
+
+.statsHeading {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.statsLead {
+  margin: 0.35rem 0 0.65rem;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.barList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.28rem;
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
+.weekBarList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 3rem 1fr 2.25rem;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+}
+
+.barLabel {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.barTrack {
+  height: 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 65%, var(--surface));
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 88%, transparent),
+    var(--accent)
+  );
+  min-width: 2px;
+  transition: width 0.25s ease;
+}
+
+.barFillAlt {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #2f9e44 75%, transparent),
+    #2f9e44
+  );
+  min-width: 2px;
+  transition: width 0.25s ease;
+}
+
+.barValue {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.productRankGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1.25rem;
+}
+
+.rankList {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rankItem {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 0.45rem;
+  align-items: baseline;
+  padding: 0.42rem 0.55rem;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  font-size: 0.86rem;
+}
+
+.rankNum {
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rankName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rankMeta {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+@media (min-width: 600px) and (max-width: 1279px) {
+  .kpiValue {
+    font-size: 1.15rem;
+  }
+
+  .toolbar {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .segment,
+  .segmentActive {
+    font-size: 0.78rem;
+    padding: 0.32rem 0.52rem;
+  }
+}
