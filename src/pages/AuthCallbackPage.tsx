@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabaseClient'
+import type { Session } from '@supabase/supabase-js'
 import { useAuth } from '@/hooks/useAuth'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import styles from './LoginPage.module.css'
+
+function isGoogleAuthSession(session: Session): boolean {
+  const meta = session.user.app_metadata?.provider
+  if (meta === 'google') return true
+  return Boolean(session.user.identities?.some((i) => i.provider === 'google'))
+}
 
 export function AuthCallbackPage() {
   useDocumentTitle('CafeNET — Giriş')
   const navigate = useNavigate()
   const { syncOAuthPanelSession } = useAuth()
-  const [message, setMessage] = useState('Hesabınız doğrulanıyor…')
+  const [message, setMessage] = useState('Oturum tamamlanıyor…')
 
   useEffect(() => {
     let cancelled = false
@@ -49,19 +56,42 @@ export function AuthCallbackPage() {
         return
       }
 
-      const { error: skelErr } = await supabase.rpc('register_google_skeleton_business')
+      const google = isGoogleAuthSession(session)
+
+      if (google) {
+        setMessage('Google hesabınız bağlanıyor…')
+        const { error: skelErr } = await supabase.rpc('register_google_skeleton_business')
+
+        if (cancelled) return
+
+        if (skelErr) {
+          console.error(skelErr)
+          setMessage('İşletme oluşturulamadı.')
+          navigate('/login', { replace: true })
+          return
+        }
+
+        await syncOAuthPanelSession()
+        navigate('/onboarding', { replace: true })
+        return
+      }
+
+      setMessage('E-posta ile kaydınız bağlanıyor…')
+      const { error: linkErr } = await supabase.rpc('link_password_panel_to_auth_by_email')
 
       if (cancelled) return
 
-      if (skelErr) {
-        console.error(skelErr)
-        setMessage('İşletme oluşturulamadı.')
+      if (linkErr) {
+        console.error(linkErr)
+        setMessage(
+          'Kayıtlı bir işletme bulunamadı. Yalnızca sitedeki kayıt formu ile oluşturulan hesaplar burada bağlanır.',
+        )
         navigate('/login', { replace: true })
         return
       }
 
       await syncOAuthPanelSession()
-      navigate('/onboarding', { replace: true })
+      navigate('/', { replace: true })
     }
 
     void run()
@@ -74,7 +104,7 @@ export function AuthCallbackPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Google ile giriş</h1>
+        <h1 className={styles.title}>Yönlendiriliyorsunuz</h1>
         <p className={styles.subtitle}>{message}</p>
       </div>
     </div>

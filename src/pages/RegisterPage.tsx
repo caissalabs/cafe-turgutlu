@@ -24,6 +24,8 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState(false)
+
   useEffect(() => {
     if (!isAuthenticated) return
     if (!onboardingComplete) navigate('/onboarding', { replace: true })
@@ -48,9 +50,15 @@ export function RegisterPage() {
         email,
       })
       if (result.ok) {
-        setPassword('')
-        setConfirmPassword('')
-        navigate('/', { replace: true })
+        if (result.needsEmailConfirmation) {
+          setAwaitingEmailConfirm(true)
+          setPassword('')
+          setConfirmPassword('')
+        } else {
+          setPassword('')
+          setConfirmPassword('')
+          navigate('/', { replace: true })
+        }
       } else {
         setError(result.error ?? 'Kayıt başarısız.')
       }
@@ -63,9 +71,32 @@ export function RegisterPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>Kayıt ol</h1>
+        {awaitingEmailConfirm ? (
+          <>
+            <p className={styles.subtitle}>
+              Kayıt bilgileriniz kaydedildi. E-postanızdaki doğrulama bağlantısına tıklayın; işletmeniz zaten
+              oluşturuldu, ikinci bir işletme açılmaz.
+            </p>
+            <p className={styles.hint}>
+              Bağlantıya tıkladığınızda hesabınız birleştirilir ve panele yönlendirilirsiniz.
+            </p>
+            <p className={styles.switchRow}>
+              <Link className={styles.link} to="/login">
+                Giriş sayfasına dön
+              </Link>
+            </p>
+          </>
+        ) : (
+          <>
         <p className={styles.subtitle}>
           Önce hesap oluşturun; işletme bilgilerini bir sonraki adımda gireceksiniz. Şifre sıfırlama için
           e-posta doğru olmalıdır.
+        </p>
+        <p className={styles.hint}>
+          Kayıt olunca Supabase’de oturum hesabınız hemen açılır; Dashboard → Authentication’da
+          görünmeniz beklenir. <strong>E-posta doğrulaması kapalıysa</strong> kayıt için gelen kutunuza
+          otomatik bir posta gitmez (normal). Doğrulama veya hoş geldin postası istiyorsanız Dashboard’da
+          “Confirm email” açın ve SMTP şablonlarını yapılandırın.
         </p>
 
         <Button
@@ -200,6 +231,8 @@ export function RegisterPage() {
             Giriş yapın
           </Link>
         </p>
+          </>
+        )}
       </div>
     </div>
   )

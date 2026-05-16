@@ -34,7 +34,9 @@ export type AuthContextValue = {
   authMethod: AuthMethod | null
 
   login: (identifier: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  register: (input: RegisterInput) => Promise<{ ok: boolean; error?: string }>
+  register: (
+    input: RegisterInput,
+  ) => Promise<{ ok: boolean; error?: string; needsEmailConfirmation?: boolean }>
   /** Şifre sıfırlama e-postası gönderir (Supabase Auth). */
   requestPasswordReset: (email: string) => Promise<{ ok: boolean; error?: string }>
   /** Kurtarma oturumunda yeni şifre + bcrypt senkronu. */

@@ -3,8 +3,10 @@
 --
 -- Önkoşullar: supabase-onboarding-active-flow.sql uygulanmış olmalı.
 -- Dashboard → Authentication:
---   - E-posta doğrulaması kapalı önerilir (panel kaydı sonrası anında oturum için).
---   - Redirect URLs: .../auth/callback, .../auth/sifre-yenile
+--   • Kayıt sonrası kullanıcının Authentication listesinde görünmesi NORMALDIR (auth.signUp auth.users oluşturur).
+--   • E-posta doğrulaması (Confirm email) KAPALI iken çoğu projede kayıtta POSTA GÖNDERİLMEZ — oturum anında açılır.
+--   • Doğrulama postası istiyorsanız Confirm email AÇIN ve SMTP / şablonları yapılandırın.
+--   • Redirect URLs: .../auth/callback, .../auth/sifre-yenile
 --
 -- Açıklama: register_user işletme satırını oluşturur; istemci ardından auth.signUp ile
 -- auth.users kaydı açar ve link_password_panel_to_auth ile business_users.auth_user_id bağlar.
@@ -123,6 +125,63 @@ end;
 $$;
 
 grant execute on function public.link_password_panel_to_auth(text) to authenticated;
+
+-- E-posta doğrulaması sonrası /auth/callback: kullanıcı adı bilinmeden pending işletmeyi auth.uid ile bağlar.
+-- İkinci bir işletme (Google iskeleti) oluşturulmasını önler.
+create or replace function public.link_password_panel_to_auth_by_email()
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_mail text;
+  v_uid uuid := auth.uid();
+  v_bid uuid;
+  v_active boolean;
+  v_oc boolean;
+  v_user_row text;
+begin
+  if v_uid is null then
+    raise exception 'Oturum gerekli';
+  end if;
+
+  select au.email into v_mail
+  from auth.users au
+  where au.id = v_uid;
+
+  if v_mail is null or trim(v_mail) = '' then
+    raise exception 'Oturum hesabında e-posta bulunamadı';
+  end if;
+
+  update public.business_users bu
+  set auth_user_id = v_uid
+  where lower(trim(bu.email)) = lower(trim(v_mail))
+    and bu.auth_user_id is null
+  returning bu.business_id into v_bid;
+
+  if v_bid is null then
+    raise exception 'Bu e-posta ile bekleyen kayıt yok; önce kayıt formunu kullanın.';
+  end if;
+
+  select b.active, b.onboarding_complete, bu.username
+    into v_active, v_oc, v_user_row
+  from public.business_users bu
+  join public.businesses b on b.id = bu.business_id
+  where bu.business_id = v_bid
+    and bu.auth_user_id = v_uid
+  limit 1;
+
+  return json_build_object(
+    'business_id', v_bid::text,
+    'active', coalesce(v_active, false),
+    'onboarding_complete', coalesce(v_oc, false),
+    'username', v_user_row
+  );
+end;
+$$;
+
+grant execute on function public.link_password_panel_to_auth_by_email() to authenticated;
 
 -- Auth şifresi değişince (kurtarma dahil) bcrypt kopyasını günceller — eksik onboarding doğrulaması için.
 create or replace function public.sync_business_user_password(p_password text)

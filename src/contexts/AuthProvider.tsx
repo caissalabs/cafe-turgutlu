@@ -177,6 +177,7 @@ function rpcErrorMessage(err: { message?: string } | null): string {
   if (raw.includes('Oturum gerekli')) return 'Oturum süresi dolmuş. Tekrar giriş yapın.'
   if (raw.includes('Geçerli bir e-posta')) return 'Geçerli bir e-posta adresi girin.'
   if (raw.includes('Panel kaydı bağlanamadı')) return raw.trim()
+  if (raw.includes('bekleyen kayıt yok')) return raw.trim()
   if (raw.includes('İşletme kullanıcısı bulunamadı')) return raw.trim()
   return raw.trim() || 'İşlem sırasında bir hata oluştu.'
 }
@@ -471,6 +472,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         options: {
           emailRedirectTo: base ? `${base}/auth/callback` : undefined,
+          data: {
+            panel_username: username,
+          },
         },
       })
 
@@ -485,10 +489,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!signData.session) {
+        if (signData.user?.id) {
+          registerFailedAttempts = 0
+          registerLockUntil = 0
+          return { ok: true, needsEmailConfirmation: true }
+        }
         return {
           ok: false,
           error:
-            'E-posta doğrulaması açıksa gelen kutunuzu kontrol edin ve doğrulayın; ardından tekrar kayıt olmayı deneyin. Geliştirme için Dashboard’da e-posta doğrulamasını kapatabilirsiniz.',
+            'Oturum oluşturulamadı. E-posta doğrulamasını kontrol edin veya tekrar deneyin.',
         }
       }
 
