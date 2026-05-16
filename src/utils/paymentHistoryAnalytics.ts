@@ -89,6 +89,176 @@ export function sortByPaidAt(
   })
 }
 
+export type ListSortMode = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'
+
+export function sortPaymentRows(
+  rows: CafePaymentHistoryRecord[],
+  mode: ListSortMode,
+): CafePaymentHistoryRecord[] {
+  return [...rows].sort((a, b) => {
+    switch (mode) {
+      case 'date-desc':
+        return parsePaidAt(b.paidAt).getTime() - parsePaidAt(a.paidAt).getTime()
+      case 'date-asc':
+        return parsePaidAt(a.paidAt).getTime() - parsePaidAt(b.paidAt).getTime()
+      case 'amount-desc':
+        return b.totalTry - a.totalTry
+      case 'amount-asc':
+        return a.totalTry - b.totalTry
+      default:
+        return 0
+    }
+  })
+}
+
+function normalizeSearch(s: string): string {
+  return s.trim().toLocaleLowerCase('tr')
+}
+
+/** Masa no/adı veya satır ürün adında metin arar */
+export function filterPaymentSearch(
+  rows: CafePaymentHistoryRecord[],
+  rawQuery: string,
+): CafePaymentHistoryRecord[] {
+  const q = normalizeSearch(rawQuery)
+  if (!q) return rows
+  return rows.filter((r) => {
+    const nick = normalizeSearch(r.tableDisplayName ?? '')
+    const numStr = String(r.tableNumber)
+    const masaLabel = normalizeSearch(`masa ${r.tableNumber}`)
+    if (numStr.includes(q) || masaLabel.includes(q) || nick.includes(q)) return true
+    return r.lines.some((l) => normalizeSearch(l.name).includes(q))
+  })
+}
+
+export function earningsInRange(
+  rows: CafePaymentHistoryRecord[],
+  rangeStart: Date,
+  rangeEnd: Date,
+): number {
+  const a = rangeStart.getTime()
+  const b = rangeEnd.getTime()
+  let sum = 0
+  for (const r of rows) {
+    const t = parsePaidAt(r.paidAt).getTime()
+    if (t >= a && t <= b) sum += r.totalTry
+  }
+  return sum
+}
+
+export function paymentCountsForKpis(
+  rows: CafePaymentHistoryRecord[],
+  now = new Date(),
+): { day: number; week: number; month: number; year: number } {
+  const ds = startOfLocalDay(now)
+  const de = endOfLocalDay(now)
+  const ws = startOfWeekMonday(now)
+  const ms = startOfMonth(now)
+  const ys = startOfYear(now)
+  let day = 0
+  let week = 0
+  let month = 0
+  let year = 0
+  for (const r of rows) {
+    const t = parsePaidAt(r.paidAt).getTime()
+    if (t >= ds.getTime() && t <= de.getTime()) day += 1
+    if (t >= ws.getTime() && t <= now.getTime()) week += 1
+    if (t >= ms.getTime() && t <= now.getTime()) month += 1
+    if (t >= ys.getTime() && t <= now.getTime()) year += 1
+  }
+  return { day, week, month, year }
+}
+
+export function earningsYesterday(rows: CafePaymentHistoryRecord[], now = new Date()): number {
+  const y = new Date(now)
+  y.setDate(y.getDate() - 1)
+  return earningsInRange(rows, startOfLocalDay(y), endOfLocalDay(y))
+}
+
+/** Önceki haftanın aynı süresi (bu haftanın Pazartesi–şimdi uzunluğu) */
+export function earningsPriorWeekSameSpan(rows: CafePaymentHistoryRecord[], now = new Date()): number {
+  const weekStart = startOfWeekMonday(now)
+  const span = now.getTime() - weekStart.getTime()
+  const prevWeekStart = new Date(weekStart.getTime() - 7 * 86400000)
+  const prevEnd = new Date(prevWeekStart.getTime() + span)
+  return earningsInRange(rows, prevWeekStart, prevEnd)
+}
+
+/** Önceki ayın ay başından bugüne kadar olan süreye denk gelen ciro */
+export function earningsPriorMonthSameSpan(rows: CafePaymentHistoryRecord[], now = new Date()): number {
+  const monthStart = startOfMonth(now)
+  const elapsed = now.getTime() - monthStart.getTime()
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const prevEnd = new Date(prevMonthStart.getTime() + elapsed)
+  return earningsInRange(rows, prevMonthStart, prevEnd)
+}
+
+/** Geçen yılın aynı süresi (yıl başı–şimdi) */
+export function earningsPriorYearSameSpan(rows: CafePaymentHistoryRecord[], now = new Date()): number {
+  const ys = startOfYear(now)
+  const elapsed = now.getTime() - ys.getTime()
+  const prevYs = new Date(now.getFullYear() - 1, 0, 1)
+  prevYs.setHours(0, 0, 0, 0)
+  const prevEnd = new Date(prevYs.getTime() + elapsed)
+  return earningsInRange(rows, prevYs, prevEnd)
+}
+
+export type PctBadge = { text: string; variant: 'up' | 'down' | 'neutral' }
+
+export function formatPctBadge(current: number, previous: number): PctBadge | null {
+  if (previous <= 0 && current <= 0) return null
+  if (previous <= 0 && current > 0) return { text: 'Yeni', variant: 'up' }
+  const pct = Math.round(((current - previous) / previous) * 100)
+  if (pct === 0) return { text: '0%', variant: 'neutral' }
+  return {
+    text: `${pct > 0 ? '+' : ''}${pct}%`,
+    variant: pct > 0 ? 'up' : 'down',
+  }
+}
+
+export function peakHourRangeFromBuckets(buckets: HourBucket[]): string {
+  const max = Math.max(0, ...buckets.map((b) => b.orderUnits))
+  if (max === 0) return 'Veri yok'
+  const thresh = max * 0.55
+  const hours = buckets.filter((b) => b.orderUnits >= thresh).map((b) => b.hour)
+  if (hours.length === 0) {
+    const best = buckets.reduce((a, b) => (b.orderUnits > a.orderUnits ? b : a))
+    return `${String(best.hour).padStart(2, '0')}:00`
+  }
+  const lo = Math.min(...hours)
+  const hi = Math.max(...hours)
+  if (lo === hi) return `${String(lo).padStart(2, '0')}:00`
+  return `${String(lo).padStart(2, '0')}:00 – ${String(hi).padStart(2, '0')}:59`
+}
+
+const WEEKDAY_FULL_TR = [
+  'Pazartesi',
+  'Salı',
+  'Çarşamba',
+  'Perşembe',
+  'Cuma',
+  'Cumartesi',
+  'Pazar',
+] as const
+
+export function peakWeekdayFromBuckets(buckets: WeekdayBucket[]): string {
+  const max = Math.max(0, ...buckets.map((b) => b.orderUnits))
+  if (max === 0) return 'Veri yok'
+  const best = buckets.reduce((a, b) => (b.orderUnits > a.orderUnits ? b : a))
+  return WEEKDAY_FULL_TR[best.weekdayIndex] ?? best.label
+}
+
+/** Son N gün (bugün dahil) içindeki ödemeler — yoğunluk kartı için */
+export function filterLastNDays(
+  rows: CafePaymentHistoryRecord[],
+  days: number,
+  now = new Date(),
+): CafePaymentHistoryRecord[] {
+  const start = startOfLocalDay(now)
+  start.setDate(start.getDate() - (days - 1))
+  return rows.filter((r) => parsePaidAt(r.paidAt).getTime() >= start.getTime())
+}
+
 export function sumTotalTry(rows: CafePaymentHistoryRecord[]): number {
   return rows.reduce((acc, r) => acc + r.totalTry, 0)
 }

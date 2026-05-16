@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { usePaymentHistory } from '@/hooks/usePaymentHistory'
@@ -12,14 +12,36 @@ import {
   downloadTextFile,
   filterByPeriodPreset,
   filterByProductKeys,
+  filterLastNDays,
+  filterPaymentSearch,
+  formatPctBadge,
+  paymentCountsForKpis,
   paymentHistoryToCsv,
-  periodEarnings,
+  earningsPriorMonthSameSpan,
+  earningsPriorWeekSameSpan,
+  earningsPriorYearSameSpan,
+  earningsYesterday,
+  type ListSortMode,
   type PeriodPreset,
   type ProductAgg,
-  sortByPaidAt,
+  peakHourRangeFromBuckets,
+  peakWeekdayFromBuckets,
+  periodEarnings,
+  sortPaymentRows,
   sumTotalTry,
 } from '@/utils/paymentHistoryAnalytics'
+import { cn } from '@/utils/cn'
 import styles from './PaymentHistoryPage.module.css'
+
+const PAGE_SIZE = 10
+
+const PERIOD_LABELS: Record<PeriodPreset, string> = {
+  all: 'Tümü',
+  day: 'Günlük',
+  week: 'Haftalık',
+  month: 'Aylık',
+  year: 'Yıllık',
+}
 
 function formatPaidAt(iso: string): string {
   try {
@@ -33,18 +55,12 @@ function formatPaidAt(iso: string): string {
   }
 }
 
-const PERIOD_LABELS: Record<PeriodPreset, string> = {
-  all: 'Tümü',
-  day: 'Bugün',
-  week: 'Bu hafta',
-  month: 'Bu ay',
-  year: 'Bu yıl',
-}
-
-function maxHourOrders(buckets: ReturnType<typeof aggregateHourDensity>): number {
-  let m = 0
-  for (const b of buckets) m = Math.max(m, b.orderUnits)
-  return m || 1
+function Icon({ name, className }: { name: string; className?: string }) {
+  return (
+    <span className={cn(styles.ms, className)} aria-hidden>
+      {name}
+    </span>
+  )
 }
 
 function maxWeekdayOrders(buckets: ReturnType<typeof aggregateWeekdayDensity>): number {
@@ -60,49 +76,98 @@ export function PaymentHistoryPage() {
   const { businessId } = useAuth()
   const { rows, loading, error } = usePaymentHistory(businessId)
 
+  const now = new Date()
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all')
-  const [sortAscending, setSortAscending] = useState(false)
+  const [sortMode, setSortMode] = useState<ListSortMode>('date-desc')
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedProductKeys, setSelectedProductKeys] = useState<ReadonlySet<string>>(new Set())
   const [productRankMetric, setProductRankMetric] = useState<ProductRankMetric>('qty')
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [page, setPage] = useState(1)
 
   const productOptions = useMemo(() => collectProductOptions(rows), [rows])
 
-  const filteredByPeriod = useMemo(
-    () => filterByPeriodPreset(rows, periodPreset),
-    [rows, periodPreset],
-  )
+  const kpis = useMemo(() => periodEarnings(rows, now), [rows, now])
+  const counts = useMemo(() => paymentCountsForKpis(rows, now), [rows, now])
 
-  const filteredRows = useMemo(
-    () => filterByProductKeys(filteredByPeriod, selectedProductKeys),
-    [filteredByPeriod, selectedProductKeys],
-  )
+  const prevDay = useMemo(() => earningsYesterday(rows, now), [rows, now])
+  const prevWeek = useMemo(() => earningsPriorWeekSameSpan(rows, now), [rows, now])
+  const prevMonth = useMemo(() => earningsPriorMonthSameSpan(rows, now), [rows, now])
+  const prevYear = useMemo(() => earningsPriorYearSameSpan(rows, now), [rows, now])
 
-  const sortedRows = useMemo(
-    () => sortByPaidAt(filteredRows, sortAscending),
-    [filteredRows, sortAscending],
-  )
+  const badgeDay = formatPctBadge(kpis.day, prevDay)
+  const badgeWeek = formatPctBadge(kpis.week, prevWeek)
+  const badgeMonth = formatPctBadge(kpis.month, prevMonth)
+  const badgeYear = formatPctBadge(kpis.year, prevYear)
 
-  const kpis = useMemo(() => periodEarnings(rows), [rows])
-  const filteredTotal = useMemo(() => sumTotalTry(filteredRows), [filteredRows])
+  const scopedRows = useMemo(() => {
+    let x = filterByPeriodPreset(rows, periodPreset, now)
+    x = filterByProductKeys(x, selectedProductKeys)
+    return x
+  }, [rows, periodPreset, selectedProductKeys, now])
 
-  const hourBuckets = useMemo(() => aggregateHourDensity(filteredRows), [filteredRows])
-  const weekdayBuckets = useMemo(() => aggregateWeekdayDensity(filteredRows), [filteredRows])
+  const densityRows = useMemo(() => {
+    let base =
+      periodPreset === 'all'
+        ? filterLastNDays(rows, 30, now)
+        : filterByPeriodPreset(rows, periodPreset, now)
+    base = filterByProductKeys(base, selectedProductKeys)
+    return base
+  }, [rows, periodPreset, selectedProductKeys, now])
+
+  const densitySubtitle =
+    periodPreset === 'all' ? 'Son 30 gün' : PERIOD_LABELS[periodPreset]
+
+  const weekdayBuckets = useMemo(() => aggregateWeekdayDensity(densityRows), [densityRows])
+  const hourBuckets = useMemo(() => aggregateHourDensity(densityRows), [densityRows])
+  const weekdayMax = maxWeekdayOrders(weekdayBuckets)
+
+  const peakHourLabel = useMemo(() => peakHourRangeFromBuckets(hourBuckets), [hourBuckets])
+  const peakDayLabel = useMemo(() => peakWeekdayFromBuckets(weekdayBuckets), [weekdayBuckets])
 
   const rankedProducts = useMemo(() => {
-    const list = aggregateProducts(filteredRows)
+    const list = aggregateProducts(scopedRows)
     const metric =
       productRankMetric === 'qty'
         ? (p: ProductAgg) => p.qty
         : (p: ProductAgg) => p.revenue
     const sortedDesc = [...list].sort((a, b) => metric(b) - metric(a))
     const sortedAsc = [...list].sort((a, b) => metric(a) - metric(b))
-    const top = sortedDesc.slice(0, 10)
-    const bottom = sortedAsc.slice(0, 10)
-    return { top, bottom, empty: list.length === 0 }
-  }, [filteredRows, productRankMetric])
+    return {
+      top: sortedDesc.slice(0, 8),
+      bottom: sortedAsc.slice(0, 8),
+      empty: list.length === 0,
+    }
+  }, [scopedRows, productRankMetric])
 
-  const hourMax = maxHourOrders(hourBuckets)
-  const weekdayMax = maxWeekdayOrders(weekdayBuckets)
+  const listPipeline = useMemo(() => {
+    let x = [...scopedRows]
+    x = filterPaymentSearch(x, searchQuery)
+    return sortPaymentRows(x, sortMode)
+  }, [scopedRows, searchQuery, sortMode])
+
+  const filteredTotal = useMemo(() => sumTotalTry(listPipeline), [listPipeline])
+
+  const totalPages = Math.max(1, Math.ceil(listPipeline.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const pageSlice = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE
+    return listPipeline.slice(start, start + PAGE_SIZE)
+  }, [listPipeline, safePage])
+
+  useEffect(() => {
+    setPage(1)
+  }, [periodPreset, searchQuery, sortMode, selectedProductKeys])
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  const monthTitle = useMemo(
+    () =>
+      new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(now),
+    [now],
+  )
 
   const toggleProductKey = useCallback((key: string) => {
     setSelectedProductKeys((prev) => {
@@ -118,23 +183,46 @@ export function PaymentHistoryPage() {
   }, [])
 
   const exportCsv = useCallback(() => {
-    const csv = paymentHistoryToCsv(sortedRows)
+    const csv = paymentHistoryToCsv(listPipeline)
     const d = new Date()
     const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     downloadTextFile(`odeme-gecmisi_${stamp}.csv`, csv, 'text/csv;charset=utf-8')
-  }, [sortedRows])
+  }, [listPipeline])
 
   const productFilterActive = selectedProductKeys.size > 0
 
+  function pctChip(badge: ReturnType<typeof formatPctBadge>, yearVariant?: boolean) {
+    if (!badge) {
+      return (
+        <span className={styles.kpiChipMuted} title="Önceki dönemle kıyas">
+          —
+        </span>
+      )
+    }
+    if (yearVariant && badge.variant === 'up') {
+      return <span className={styles.kpiChipTarget}>Hedefte</span>
+    }
+    return (
+      <span
+        className={
+          badge.variant === 'up'
+            ? styles.kpiChipUp
+            : badge.variant === 'down'
+              ? styles.kpiChipDown
+              : styles.kpiChipNeutral
+        }
+      >
+        {badge.text}
+      </span>
+    )
+  }
+
+  const rangeFrom = listPipeline.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1
+  const rangeTo = Math.min(safePage * PAGE_SIZE, listPipeline.length)
+
   return (
-    <section className={styles.stack}>
+    <section className={styles.shell}>
       <h1 className={styles.pageTitleSr}>Ödeme geçmişi</h1>
-      <h2 className={styles.heading}>Ödeme geçmişi</h2>
-      <p className={styles.intro}>
-        Masada <strong>Ödeme Alındı</strong> ile kapattığınız hesaplar burada listelenir. Aşağıdaki özet ve grafikler{' '}
-        <strong>seçtiğiniz dönem ve ürün filtresine</strong> göre hesaplanır; günlük / haftalık / aylık / yıllık kazanç
-        kartları tüm kayıtlara göredir.
-      </p>
 
       {error ? (
         <p className={styles.err} role="alert">
@@ -143,252 +231,366 @@ export function PaymentHistoryPage() {
       ) : null}
       {loading ? <p className={styles.loading}>Yükleniyor…</p> : null}
 
-      {!loading && rows.length > 0 ? (
-        <>
-          <section className={styles.kpiGrid} aria-label="Kazanç özeti">
-            <article className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Günlük kazanç</p>
-              <p className={styles.kpiValue}>{formatPriceTry(kpis.day)}</p>
-              <p className={styles.kpiHint}>Bugün (yerel saat)</p>
-            </article>
-            <article className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Haftalık kazanç</p>
-              <p className={styles.kpiValue}>{formatPriceTry(kpis.week)}</p>
-              <p className={styles.kpiHint}>Pazartesi başlangıçlı hafta</p>
-            </article>
-            <article className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Aylık kazanç</p>
-              <p className={styles.kpiValue}>{formatPriceTry(kpis.month)}</p>
-              <p className={styles.kpiHint}>Bu takvim ayı</p>
-            </article>
-            <article className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Yıllık kazanç</p>
-              <p className={styles.kpiValue}>{formatPriceTry(kpis.year)}</p>
-              <p className={styles.kpiHint}>Bu takvim yılı</p>
-            </article>
-          </section>
-
-          <div className={styles.toolbar}>
-            <div className={styles.toolGroup}>
-              <span className={styles.toolLabel} id="period-label">
-                Dönem
-              </span>
-              <div className={styles.segmentRow} role="group" aria-labelledby="period-label">
-                {(Object.keys(PERIOD_LABELS) as PeriodPreset[]).map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={periodPreset === key ? styles.segmentActive : styles.segment}
-                    onClick={() => setPeriodPreset(key)}
-                  >
-                    {PERIOD_LABELS[key]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.toolGroup}>
-              <label className={styles.toolLabel} htmlFor="sort-paid">
-                Tarihe göre sıra
-              </label>
-              <select
-                id="sort-paid"
-                className={styles.select}
-                value={sortAscending ? 'asc' : 'desc'}
-                onChange={(e) => setSortAscending(e.target.value === 'asc')}
-              >
-                <option value="desc">Yeniden eskiye</option>
-                <option value="asc">Eskiden yeniye</option>
-              </select>
-            </div>
-
-            <div className={styles.toolGroup}>
-              <label className={styles.toolLabel} htmlFor="product-rank-metric">
-                Ürün sıralaması
-              </label>
-              <select
-                id="product-rank-metric"
-                className={styles.select}
-                value={productRankMetric}
-                onChange={(e) => setProductRankMetric(e.target.value as ProductRankMetric)}
-              >
-                <option value="qty">Satış adedi</option>
-                <option value="revenue">Ciro</option>
-              </select>
-            </div>
-
-            <div className={styles.toolActions}>
-              <button type="button" className={styles.exportBtn} onClick={exportCsv}>
-                Excel (CSV) indir
-              </button>
-            </div>
-          </div>
-
-          <details className={styles.productFilter}>
-            <summary className={styles.productFilterSummary}>
-              Ürün filtresi
-              {productFilterActive ? (
-                <span className={styles.filterBadge}>{selectedProductKeys.size} seçili</span>
-              ) : null}
-            </summary>
-            <p className={styles.productFilterHint}>
-              Hiç seçim yoksa tüm ürünler dahildir. Seçtiğiniz ürünlerden <strong>en az biri</strong> geçen ödemeler
-              listelenir.
-            </p>
-            {productOptions.length === 0 ? (
-              <p className={styles.muted}>Ürün satırı yok.</p>
-            ) : (
-              <>
-                <div className={styles.productChips}>
-                  {productOptions.map((p) => {
-                    const on = selectedProductKeys.has(p.key)
-                    return (
-                      <label key={p.key} className={on ? styles.chipOn : styles.chip}>
-                        <input
-                          type="checkbox"
-                          className={styles.chipInput}
-                          checked={on}
-                          onChange={() => toggleProductKey(p.key)}
-                        />
-                        <span>{p.name}</span>
-                      </label>
-                    )
-                  })}
-                </div>
-                {productFilterActive ? (
-                  <button type="button" className={styles.clearFilterBtn} onClick={clearProductFilter}>
-                    Ürün seçimini temizle
-                  </button>
-                ) : null}
-              </>
-            )}
-          </details>
-
-          <p className={styles.rangeSummary}>
-            Filtrelenen dönem tutarı: <strong>{formatPriceTry(filteredTotal)}</strong> ·{' '}
-            <span className={styles.muted}>
-              {sortedRows.length} ödeme kaydı {productFilterActive ? '(ürün filtresi açık)' : ''}
-            </span>
-          </p>
-
-          <section className={styles.statsSection} aria-label="İstatistikler">
-            <h3 className={styles.statsHeading}>Yoğunluk — saat</h3>
-            <p className={styles.statsLead}>Ödemelerdeki sipariş adedine göre (aynı saatte birden fazla hesap kapanışı toplanır).</p>
-            <ul className={styles.barList}>
-              {hourBuckets.map((b) => (
-                <li key={b.hour} className={styles.barRow}>
-                  <span className={styles.barLabel}>
-                    {String(b.hour).padStart(2, '0')}:00
-                  </span>
-                  <div className={styles.barTrack}>
-                    <div
-                      className={styles.barFill}
-                      style={{ width: `${(b.orderUnits / hourMax) * 100}%` }}
-                    />
-                  </div>
-                  <span className={styles.barValue}>{b.orderUnits}</span>
-                </li>
-              ))}
-            </ul>
-
-            <h3 className={styles.statsHeading}>Yoğunluk — haftanın günü</h3>
-            <ul className={styles.weekBarList}>
-              {weekdayBuckets.map((b) => (
-                <li key={b.weekdayIndex} className={styles.barRow}>
-                  <span className={styles.barLabel}>{b.label}</span>
-                  <div className={styles.barTrack}>
-                    <div
-                      className={styles.barFillAlt}
-                      style={{ width: `${(b.orderUnits / weekdayMax) * 100}%` }}
-                    />
-                  </div>
-                  <span className={styles.barValue}>{b.orderUnits}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className={styles.productRankGrid}>
-              <div>
-                <h3 className={styles.statsHeading}>En çok tercih edilenler</h3>
-                {rankedProducts.empty ? (
-                  <p className={styles.muted}>Veri yok.</p>
-                ) : (
-                  <ol className={styles.rankList}>
-                    {rankedProducts.top.map((p, i) => (
-                      <li key={p.key} className={styles.rankItem}>
-                        <span className={styles.rankNum}>{i + 1}</span>
-                        <span className={styles.rankName}>{p.name}</span>
-                        <span className={styles.rankMeta}>
-                          {productRankMetric === 'qty' ? `${p.qty} adet` : formatPriceTry(p.revenue)}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </div>
-              <div>
-                <h3 className={styles.statsHeading}>En az tercih edilenler</h3>
-                {rankedProducts.empty ? (
-                  <p className={styles.muted}>Veri yok.</p>
-                ) : (
-                  <ol className={styles.rankList}>
-                    {rankedProducts.bottom.map((p, i) => (
-                      <li key={p.key} className={styles.rankItem}>
-                        <span className={styles.rankNum}>{i + 1}</span>
-                        <span className={styles.rankName}>{p.name}</span>
-                        <span className={styles.rankMeta}>
-                          {productRankMetric === 'qty' ? `${p.qty} adet` : formatPriceTry(p.revenue)}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-              </div>
-            </div>
-          </section>
-        </>
-      ) : null}
-
       {!loading && rows.length === 0 ? (
         <p className={styles.empty}>Henüz kayıtlı ödeme yok.</p>
       ) : null}
 
-      {!loading && sortedRows.length === 0 && rows.length > 0 ? (
-        <p className={styles.empty}>Seçilen filtrelere uyan ödeme yok.</p>
-      ) : null}
-
-      {!loading && sortedRows.length > 0 ? (
-        <ul className={styles.list} aria-label="Ödemeler">
-          {sortedRows.map((r) => {
-            const label =
-              r.tableDisplayName?.trim() ||
-              canonicalTableName(r.tableNumber)
-            return (
-              <li key={r.id} className={styles.card}>
-                <div className={styles.cardHead}>
-                  <div>
-                    <p className={styles.cardTitle}>{label}</p>
-                    <p className={styles.cardMeta}>
-                      {formatPaidAt(r.paidAt)} · {r.orderCount} sipariş
-                    </p>
-                  </div>
-                  <span className={styles.total}>{formatPriceTry(r.totalTry)}</span>
+      {!loading && rows.length > 0 ? (
+        <>
+          <div className={styles.sectionBlock}>
+            <h2 className={styles.sectionTitle}>
+              <Icon name="account_balance_wallet" className={styles.sectionTitleIcon} />
+              Gelir Kalemleri
+            </h2>
+            <div className={styles.kpiGrid}>
+              <article className={styles.kpiCard}>
+                <div className={styles.kpiCardTop}>
+                  <span className={styles.kpiCardLabel}>Günlük Gelir</span>
+                  {pctChip(badgeDay)}
                 </div>
-                <ul className={styles.lines}>
-                  {r.lines.map((line) => (
-                    <li key={`${r.id}-${line.key}`} className={styles.line}>
-                      <span className={styles.lineName}>{line.name}</span>
-                      <span className={styles.lineQty}>×{line.qty}</span>
-                      <span className={styles.lineSum}>
-                        {formatPriceTry(line.price * line.qty)}
-                      </span>
-                    </li>
+                <div className={styles.kpiCardAmount}>{formatPriceTry(kpis.day)}</div>
+                <div className={styles.kpiCardHint}>
+                  Bugün, {counts.day} işlem
+                </div>
+              </article>
+              <article className={styles.kpiCard}>
+                <div className={styles.kpiCardTop}>
+                  <span className={styles.kpiCardLabel}>Haftalık Gelir</span>
+                  {pctChip(badgeWeek)}
+                </div>
+                <div className={styles.kpiCardAmount}>{formatPriceTry(kpis.week)}</div>
+                <div className={styles.kpiCardHint}>Son 7 gün · {counts.week} işlem</div>
+              </article>
+              <article className={styles.kpiCard}>
+                <div className={styles.kpiCardTop}>
+                  <span className={styles.kpiCardLabel}>Aylık Gelir</span>
+                  {pctChip(badgeMonth)}
+                </div>
+                <div className={styles.kpiCardAmount}>{formatPriceTry(kpis.month)}</div>
+                <div className={styles.kpiCardHint}>
+                  {monthTitle} · {counts.month} işlem
+                </div>
+              </article>
+              <article className={styles.kpiCard}>
+                <div className={styles.kpiCardTop}>
+                  <span className={styles.kpiCardLabel}>Yıllık Gelir</span>
+                  {pctChip(badgeYear, true)}
+                </div>
+                <div className={styles.kpiCardAmount}>{formatPriceTry(kpis.year)}</div>
+                <div className={styles.kpiCardHint}>
+                  {now.getFullYear()} yılı · {counts.year} işlem
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div className={styles.statsGrid}>
+            <div className={styles.densityCard}>
+              <div className={styles.densityHead}>
+                <h3 className={styles.densityTitle}>
+                  <Icon name="analytics" className={styles.sectionTitleIcon} />
+                  Yoğunluk Analizi
+                </h3>
+                <span className={styles.densityMeta}>{densitySubtitle}</span>
+              </div>
+              <div className={styles.heatmap}>
+                {weekdayBuckets.map((b) => (
+                  <div key={b.weekdayIndex} className={styles.heatmapCol}>
+                    <div
+                      className={styles.heatmapBar}
+                      style={{
+                        height: `${Math.max(18, (b.orderUnits / weekdayMax) * 112)}px`,
+                      }}
+                    />
+                    <span className={styles.heatmapDay}>{b.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className={styles.densityFoot}>
+                <div className={styles.densityFootInner}>
+                  <div className={styles.peakItem}>
+                    <Icon name="schedule" className={styles.peakIcon} />
+                    <span className={styles.peakText}>Pik Saat: {peakHourLabel}</span>
+                  </div>
+                  <div className={styles.peakItem}>
+                    <Icon name="event" className={styles.peakIcon} />
+                    <span className={styles.peakText}>Pik Gün: {peakDayLabel}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.sideStack}>
+              <div className={styles.sideCard}>
+                <div className={styles.sideCardHead}>
+                  <h3 className={styles.sideCardTitle}>En Çok Tercih Edilenler</h3>
+                  <select
+                    className={styles.sideSelect}
+                    value={productRankMetric}
+                    onChange={(e) => setProductRankMetric(e.target.value as ProductRankMetric)}
+                    aria-label="Ürün sıralama ölçütü"
+                  >
+                    <option value="qty">Adet</option>
+                    <option value="revenue">Ciro</option>
+                  </select>
+                </div>
+                <div className={styles.sideList}>
+                  {rankedProducts.empty ? (
+                    <p className={styles.sideEmpty}>Veri yok.</p>
+                  ) : (
+                    rankedProducts.top.map((p) => (
+                      <div key={p.key} className={styles.sideRow}>
+                        <span className={styles.sideName}>{p.name}</span>
+                        <span className={styles.sideVal}>
+                          {productRankMetric === 'qty' ? `${p.qty} Adet` : formatPriceTry(p.revenue)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className={styles.sideCard}>
+                <h3 className={cn(styles.sideCardTitle, styles.sideCardTitleDanger)}>
+                  En Az Tercih Edilenler
+                </h3>
+                <div className={styles.sideList}>
+                  {rankedProducts.empty ? (
+                    <p className={styles.sideEmpty}>Veri yok.</p>
+                  ) : (
+                    rankedProducts.bottom.map((p) => (
+                      <div key={p.key} className={styles.sideRow}>
+                        <span className={styles.sideName}>{p.name}</span>
+                        <span className={styles.sideValMuted}>
+                          {productRankMetric === 'qty' ? `${p.qty} Adet` : formatPriceTry(p.revenue)}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.panel}>
+            <div className={styles.panelToolbar}>
+              <div className={styles.panelToolbarTop}>
+                <div className={styles.panelTitleRow}>
+                  <Icon name="history" className={styles.sectionTitleIcon} />
+                  <h2 className={styles.panelTitle}>İşlem Detayları</h2>
+                </div>
+                <button type="button" className={styles.exportBtn} onClick={exportCsv}>
+                  <Icon name="description" />
+                  Excel Olarak Dışa Aktar
+                </button>
+              </div>
+
+              <div className={styles.panelFilters}>
+                <div className={styles.searchWrap}>
+                  <Icon name="search" className={styles.searchIcon} />
+                  <input
+                    type="search"
+                    className={styles.searchInput}
+                    placeholder="İşlem veya Ürün Ara..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    aria-label="İşlem veya ürün ara"
+                  />
+                </div>
+
+                <select
+                  className={styles.filterSelect}
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as ListSortMode)}
+                  aria-label="Sıralama"
+                >
+                  <option value="date-desc">Tarih: En Yeni</option>
+                  <option value="date-asc">Tarih: En Eski</option>
+                  <option value="amount-desc">Tutar: En Yüksek</option>
+                  <option value="amount-asc">Tutar: En Düşük</option>
+                </select>
+
+                <div className={styles.periodToggle} role="group" aria-label="Dönem filtresi">
+                  {(Object.keys(PERIOD_LABELS) as PeriodPreset[]).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={periodPreset === key ? styles.periodBtnOn : styles.periodBtn}
+                      onClick={() => setPeriodPreset(key)}
+                    >
+                      {PERIOD_LABELS[key]}
+                    </button>
                   ))}
-                </ul>
-              </li>
-            )
-          })}
-        </ul>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.advancedBtn}
+                  onClick={() => setAdvancedOpen((v) => !v)}
+                  aria-expanded={advancedOpen}
+                >
+                  <Icon name="filter_alt" />
+                  Gelişmiş Filtre
+                </button>
+              </div>
+
+              {advancedOpen ? (
+                <div className={styles.advancedBody}>
+                  <p className={styles.advancedHint}>
+                    Ürün seçin; seçili ürünlerden <strong>en az biri</strong> geçen ödemeler listelenir.
+                    {productFilterActive ? (
+                      <button type="button" className={styles.linkBtn} onClick={clearProductFilter}>
+                        Seçimi temizle
+                      </button>
+                    ) : null}
+                  </p>
+                  <div className={styles.productChips}>
+                    {productOptions.map((p) => {
+                      const on = selectedProductKeys.has(p.key)
+                      return (
+                        <label key={p.key} className={on ? styles.chipOn : styles.chip}>
+                          <input
+                            type="checkbox"
+                            className={styles.chipInput}
+                            checked={on}
+                            onChange={() => toggleProductKey(p.key)}
+                          />
+                          <span>{p.name}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              <p className={styles.summaryLine}>
+                Filtrelenen tutar: <strong>{formatPriceTry(filteredTotal)}</strong>
+                <span className={styles.summaryMuted}>
+                  {' '}
+                  · {listPipeline.length} kayıt
+                  {productFilterActive ? ' · ürün filtresi açık' : ''}
+                </span>
+              </p>
+            </div>
+
+            {listPipeline.length === 0 ? (
+              <p className={styles.panelEmpty}>Seçilen filtrelere uyan işlem yok.</p>
+            ) : (
+              <ul className={styles.txList}>
+                {pageSlice.map((r, idx) => {
+                  const label =
+                    r.tableDisplayName?.trim() ||
+                    canonicalTableName(r.tableNumber)
+                  const iconName = idx % 2 === 0 ? 'table_bar' : 'table_restaurant'
+                  return (
+                    <li key={r.id} className={styles.txRow}>
+                      <div className={styles.txMain}>
+                        <div className={styles.txLeft}>
+                          <div className={styles.txAvatar}>
+                            <Icon name={iconName} className={styles.txAvatarIcon} />
+                          </div>
+                          <div>
+                            <h3 className={styles.txTitle}>{label}</h3>
+                            <p className={styles.txMeta}>{formatPaidAt(r.paidAt)}</p>
+                          </div>
+                        </div>
+                        <div className={styles.txMid}>
+                          <div className={styles.txMidLabel}>Sipariş Detayı</div>
+                          <div className={styles.txChips}>
+                            {r.lines.map((line) => (
+                              <span key={`${r.id}-${line.key}`} className={styles.lineChip}>
+                                {line.name} × {line.qty}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className={styles.txRight}>
+                          <div className={styles.txAmount}>{formatPriceTry(r.totalTry)}</div>
+                          <div className={styles.paidBadge}>
+                            <Icon name="check_circle" className={styles.msFill} />
+                            Ödendi
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+
+            {listPipeline.length > 0 ? (
+              <div className={styles.pagination}>
+                <p className={styles.paginationInfo}>
+                  Toplam {listPipeline.length} işlemin {rangeFrom}-{rangeTo} arası gösteriliyor
+                </p>
+                <div className={styles.paginationBtns}>
+                  <button
+                    type="button"
+                    className={styles.pageArrow}
+                    disabled={safePage <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    aria-label="Önceki sayfa"
+                  >
+                    <Icon name="chevron_left" />
+                  </button>
+                  {totalPages <= 9
+                    ? Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
+                        <button
+                          key={pNum}
+                          type="button"
+                          className={pNum === safePage ? styles.pageNumOn : styles.pageNum}
+                          onClick={() => setPage(pNum)}
+                        >
+                          {pNum}
+                        </button>
+                      ))
+                    : (
+                        <>
+                          <button
+                            type="button"
+                            className={safePage === 1 ? styles.pageNumOn : styles.pageNum}
+                            onClick={() => setPage(1)}
+                          >
+                            1
+                          </button>
+                          {safePage > 3 ? <span className={styles.pageEllipsis}>…</span> : null}
+                          {Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .filter((pNum) => pNum > 1 && pNum < totalPages && Math.abs(pNum - safePage) <= 1)
+                            .map((pNum) => (
+                              <button
+                                key={pNum}
+                                type="button"
+                                className={pNum === safePage ? styles.pageNumOn : styles.pageNum}
+                                onClick={() => setPage(pNum)}
+                              >
+                                {pNum}
+                              </button>
+                            ))}
+                          {safePage < totalPages - 2 ? (
+                            <span className={styles.pageEllipsis}>…</span>
+                          ) : null}
+                          <button
+                            type="button"
+                            className={safePage === totalPages ? styles.pageNumOn : styles.pageNum}
+                            onClick={() => setPage(totalPages)}
+                          >
+                            {totalPages}
+                          </button>
+                        </>
+                      )}
+                  <button
+                    type="button"
+                    className={styles.pageArrow}
+                    disabled={safePage >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    aria-label="Sonraki sayfa"
+                  >
+                    <Icon name="chevron_right" />
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </>
       ) : null}
     </section>
   )
