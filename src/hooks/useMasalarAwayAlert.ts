@@ -79,9 +79,9 @@ export function useMasalarAwayAlert() {
     setPendingTables([])
   }, [viewingMasalar])
 
+  /** Tamam: sadece modal + zil; rozet Masalar’a gidilince silinir */
   const dismissReturnModal = useCallback(() => {
     stopOrderAlarm()
-    setMasalarBadge(false)
     setReturnModalOpen(false)
     setPendingTables([])
   }, [])

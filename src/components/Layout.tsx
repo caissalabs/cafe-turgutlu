@@ -38,7 +38,7 @@ function LayoutChrome({ children }: { children?: ReactNode }) {
         open={away.returnModalOpen}
         tableNumbers={away.returnModalTables}
         onDismiss={away.dismissReturnModal}
-        hint="Menü, ödeme geçmişi gibi bir sayfadayken sipariş oluştu. Masalara git veya Tamam ile zili kapatabilirsiniz."
+        hint="Tamam yalnızca bildirimi ve zili kapatır; Masalar’daki kırmızı işaret kalır. İşaret yalnızca Masalara git veya üstteki Masalar ile masalar ekranına geçince kaybolur."
         secondaryLabel="Masalara git"
         onSecondary={() => {
           away.dismissReturnModal()
