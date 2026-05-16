@@ -91,6 +91,40 @@ export function filterByLocalHourRange(
   })
 }
 
+/** Yerel saat diliminde 3 saatlik dilim (0–7). null = filtre yok. Dilim i: saat i*3 .. i*3+2 */
+export function filterByThreeHourSlot(
+  rows: CafePaymentHistoryRecord[],
+  slotIndex: number | null,
+): CafePaymentHistoryRecord[] {
+  if (
+    slotIndex == null ||
+    !Number.isFinite(slotIndex) ||
+    !Number.isInteger(slotIndex) ||
+    slotIndex < 0 ||
+    slotIndex > 7
+  ) {
+    return rows
+  }
+  const from = slotIndex * 3
+  const to = from + 2
+  return rows.filter((r) => {
+    const h = parsePaidAt(r.paidAt).getHours()
+    return h >= from && h <= to
+  })
+}
+
+/** Yoğunluk filtresi için etiketler (yerel saat, ödemenin saat damgası). */
+export const THREE_HOUR_SLOT_LABELS: readonly string[] = [
+  '00:00–02:59',
+  '03:00–05:59',
+  '06:00–08:59',
+  '09:00–11:59',
+  '12:00–14:59',
+  '15:00–17:59',
+  '18:00–20:59',
+  '21:00–23:59',
+]
+
 export function filterByProductKeys(
   rows: CafePaymentHistoryRecord[],
   keys: ReadonlySet<string>,

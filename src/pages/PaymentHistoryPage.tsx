@@ -9,10 +9,11 @@ import {
   aggregateHourDensity,
   aggregateProducts,
   aggregateWeekdayDensity,
+  THREE_HOUR_SLOT_LABELS,
   downloadTextFile,
   filterByPeriodPreset,
   filterLastNDays,
-  filterByLocalHourRange,
+  filterByThreeHourSlot,
   filterPaymentSearch,
   mergeMenuWithSales,
   paymentCountsForKpis,
@@ -38,8 +39,6 @@ const PERIOD_LABELS: Record<PeriodPreset, string> = {
   month: 'Aylık',
   year: 'Yıllık',
 }
-
-const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i)
 
 function formatPaidAt(iso: string): string {
   try {
@@ -82,8 +81,7 @@ export function PaymentHistoryPage() {
   const now = new Date()
   const [listPeriodPreset, setListPeriodPreset] = useState<PeriodPreset>('all')
   const [densityPeriodPreset, setDensityPeriodPreset] = useState<PeriodPreset>('all')
-  const [densityHourFrom, setDensityHourFrom] = useState(0)
-  const [densityHourTo, setDensityHourTo] = useState(23)
+  const [densityThreeHourSlot, setDensityThreeHourSlot] = useState<number | null>(null)
   const [sortMode, setSortMode] = useState<ListSortMode>('date-desc')
   const [searchQuery, setSearchQuery] = useState('')
   const [productRankMetric, setProductRankMetric] = useState<ProductRankMetric>('qty')
@@ -102,22 +100,20 @@ export function PaymentHistoryPage() {
       densityPeriodPreset === 'all'
         ? filterLastNDays(rows, 30, now)
         : filterByPeriodPreset(rows, densityPeriodPreset, now)
-    base = filterByLocalHourRange(base, densityHourFrom, densityHourTo)
+    base = filterByThreeHourSlot(base, densityThreeHourSlot)
     return base
-  }, [rows, densityPeriodPreset, densityHourFrom, densityHourTo, now])
+  }, [rows, densityPeriodPreset, densityThreeHourSlot, now])
 
   const densitySubtitle = useMemo(() => {
     const parts: string[] = []
     parts.push(
       densityPeriodPreset === 'all' ? 'Son 30 gün' : PERIOD_LABELS[densityPeriodPreset],
     )
-    if (densityHourFrom !== 0 || densityHourTo !== 23) {
-      const a = Math.min(densityHourFrom, densityHourTo)
-      const b = Math.max(densityHourFrom, densityHourTo)
-      parts.push(`${String(a).padStart(2, '0')}:00–${String(b).padStart(2, '0')}:59`)
+    if (densityThreeHourSlot != null && THREE_HOUR_SLOT_LABELS[densityThreeHourSlot]) {
+      parts.push(THREE_HOUR_SLOT_LABELS[densityThreeHourSlot]!)
     }
     return parts.join(' · ')
-  }, [densityPeriodPreset, densityHourFrom, densityHourTo])
+  }, [densityPeriodPreset, densityThreeHourSlot])
 
   const weekdayBuckets = useMemo(() => aggregateWeekdayDensity(densityRows), [densityRows])
   const hourBuckets = useMemo(() => aggregateHourDensity(densityRows), [densityRows])
@@ -277,34 +273,24 @@ export function PaymentHistoryPage() {
                   ))}
                 </div>
                 <div className={styles.densityHourRow}>
-                  <label className={styles.densityHourLabel} htmlFor="dens-hour-from">
-                    Saat aralığı
+                  <label className={styles.densityHourLabel} htmlFor="dens-slot">
+                    Saat dilimi (3 saat)
                   </label>
                   <div className={styles.densityHourSelects}>
                     <select
-                      id="dens-hour-from"
-                      className={styles.densitySelect}
-                      value={densityHourFrom}
-                      onChange={(e) => setDensityHourFrom(Number(e.target.value))}
-                      aria-label="Başlangıç saati"
+                      id="dens-slot"
+                      className={cn(styles.densitySelect, styles.densitySlotSelect)}
+                      value={densityThreeHourSlot === null ? 'all' : String(densityThreeHourSlot)}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setDensityThreeHourSlot(v === 'all' ? null : Number(v))
+                      }}
+                      aria-label="Üç saatlik saat dilimi"
                     >
-                      {HOUR_OPTIONS.map((h) => (
-                        <option key={h} value={h}>
-                          {String(h).padStart(2, '0')}:00
-                        </option>
-                      ))}
-                    </select>
-                    <span className={styles.densityHourSep}>—</span>
-                    <select
-                      id="dens-hour-to"
-                      className={styles.densitySelect}
-                      value={densityHourTo}
-                      onChange={(e) => setDensityHourTo(Number(e.target.value))}
-                      aria-label="Bitiş saati"
-                    >
-                      {HOUR_OPTIONS.map((h) => (
-                        <option key={h} value={h}>
-                          {String(h).padStart(2, '0')}:59
+                      <option value="all">Tümü</option>
+                      {THREE_HOUR_SLOT_LABELS.map((label, i) => (
+                        <option key={label} value={i}>
+                          {label}
                         </option>
                       ))}
                     </select>
