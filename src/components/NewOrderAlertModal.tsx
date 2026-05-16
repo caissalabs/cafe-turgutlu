@@ -8,6 +8,9 @@ type NewOrderAlertModalProps = {
   onDismiss: () => void
   /** Varsayılan: zil / tamam metni */
   hint?: string
+  /** İkinci eylem (ör. Masalara git); genelde onDismiss ile birlikte zili kapatır */
+  secondaryLabel?: string
+  onSecondary?: () => void
 }
 
 export function NewOrderAlertModal({
@@ -15,6 +18,8 @@ export function NewOrderAlertModal({
   tableNumbers,
   onDismiss,
   hint = 'Zil sesini durdurmak için Tamam\'a basın.',
+  secondaryLabel,
+  onSecondary,
 }: NewOrderAlertModalProps) {
   const titleId = useId()
 
@@ -57,9 +62,22 @@ export function NewOrderAlertModal({
         </h2>
         <p className={styles.lead}>{label}</p>
         <p className={styles.hint}>{hint}</p>
-        <button type="button" className={styles.ok} onClick={onDismiss}>
-          Tamam
-        </button>
+        <div className={styles.actions}>
+          {secondaryLabel && onSecondary ? (
+            <>
+              <button type="button" className={styles.ok} onClick={onSecondary}>
+                {secondaryLabel}
+              </button>
+              <button type="button" className={styles.secondary} onClick={onDismiss}>
+                Tamam
+              </button>
+            </>
+          ) : (
+            <button type="button" className={styles.ok} onClick={onDismiss}>
+              Tamam
+            </button>
+          )}
+        </div>
       </div>
     </div>,
     document.body,

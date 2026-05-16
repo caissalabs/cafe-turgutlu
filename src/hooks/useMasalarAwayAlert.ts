@@ -4,8 +4,9 @@ import { useOrdersFeed } from '@/hooks/useOrdersFeed'
 import { startOrderAlarm, stopOrderAlarm } from '@/utils/orderAlarmSound'
 
 /**
- * Masalar sayfası (/home) veya sekme görünür değilken gelen yeni siparişleri izler.
- * Header'da Masalar yanında rozet; masalara dönünce modal + zil.
+ * Masalar ekranı (/home) görünür değilken başka bir panel sayfasındayken gelen
+ * siparişleri izler: hemen modal + zil. (/home + sekme arka planda → AdminHome’daki
+ * useNewOrderAttention devreye girer; çift bildirim olmasın diye burada yok sayılır.)
  */
 export function useMasalarAwayAlert() {
   const location = useLocation()
@@ -23,10 +24,14 @@ export function useMasalarAwayAlert() {
     [location.pathname, visibility],
   )
 
+  const masalarRouteButHidden = useMemo(
+    () => location.pathname === '/home' && visibility !== 'visible',
+    [location.pathname, visibility],
+  )
+
   const baselineIdsRef = useRef<Set<string>>(new Set())
   const bootRef = useRef(true)
 
-  const [unseenBadge, setUnseenBadge] = useState(false)
   const [pendingTables, setPendingTables] = useState<number[]>([])
   const [returnModalOpen, setReturnModalOpen] = useState(false)
 
@@ -46,22 +51,20 @@ export function useMasalarAwayAlert() {
       return
     }
 
+    if (masalarRouteButHidden) {
+      return
+    }
+
     const baseline = baselineIdsRef.current
     const newlyAdded = orders.filter((o) => !baseline.has(o.id))
-    if (newlyAdded.length > 0) {
-      setUnseenBadge(true)
-      setPendingTables(
-        [...new Set(newlyAdded.map((o) => o.tableNumber))].sort((a, b) => a - b),
-      )
-    }
-  }, [orders, ordersLoading, viewingMasalar])
+    if (newlyAdded.length === 0) return
 
-  useEffect(() => {
-    if (!viewingMasalar || !unseenBadge || pendingTables.length === 0) return
+    const tables = [...new Set(newlyAdded.map((o) => o.tableNumber))].sort((a, b) => a - b)
+    setPendingTables((prev) => [...new Set([...prev, ...tables])].sort((a, b) => a - b))
     setReturnModalOpen(true)
     startOrderAlarm()
-    setUnseenBadge(false)
-  }, [viewingMasalar, unseenBadge, pendingTables])
+    baselineIdsRef.current = ids
+  }, [orders, ordersLoading, viewingMasalar, masalarRouteButHidden])
 
   const dismissReturnModal = useCallback(() => {
     stopOrderAlarm()
@@ -72,7 +75,6 @@ export function useMasalarAwayAlert() {
   useEffect(() => () => stopOrderAlarm(), [])
 
   return {
-    masalarBadge: unseenBadge,
     returnModalOpen,
     returnModalTables: pendingTables,
     dismissReturnModal,

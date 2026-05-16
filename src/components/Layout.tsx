@@ -38,7 +38,12 @@ function LayoutChrome({ children }: { children?: ReactNode }) {
         open={away.returnModalOpen}
         tableNumbers={away.returnModalTables}
         onDismiss={away.dismissReturnModal}
-        hint="Başka sekmede veya Menü / Ödeme gibi bir sayfadayken sipariş oluştu. Zil sesini durdurmak için Tamam'a basın."
+        hint="Menü, ödeme geçmişi gibi bir sayfadayken sipariş oluştu. Masalara git veya Tamam ile zili kapatabilirsiniz."
+        secondaryLabel="Masalara git"
+        onSecondary={() => {
+          away.dismissReturnModal()
+          navigate('/home')
+        }}
       />
 
       <header className={styles.header}>
@@ -48,21 +53,15 @@ function LayoutChrome({ children }: { children?: ReactNode }) {
             <span className={styles.brandTag}>Yönetici Paneli</span>
           </NavLink>
           <nav className={styles.nav} aria-label="Yönetici Paneli">
-            <span className={styles.navItemBadgeWrap}>
-              <NavLink
-                to="/home"
-                end
-                aria-label={away.masalarBadge ? 'Masalar — yeni sipariş var' : undefined}
-                className={({ isActive }) =>
-                  cn(styles.navItem, isActive && styles.navItemActive)
-                }
-              >
-                Masalar
-              </NavLink>
-              {away.masalarBadge ? (
-                <span className={styles.navNewDot} title="Yeni sipariş" aria-hidden />
-              ) : null}
-            </span>
+            <NavLink
+              to="/home"
+              end
+              className={({ isActive }) =>
+                cn(styles.navItem, isActive && styles.navItemActive)
+              }
+            >
+              Masalar
+            </NavLink>
             <NavLink
               to="/home/odeme-gecmisi"
               className={({ isActive }) =>
