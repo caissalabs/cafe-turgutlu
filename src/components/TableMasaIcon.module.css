@@ -12,6 +12,20 @@
   height: auto;
 }
 
+@media (min-width: 600px) and (max-width: 1279px) {
+  .svg {
+    width: clamp(4.65rem, 7.5vw, 5.65rem);
+  }
+
+  .root {
+    gap: 0.42rem;
+  }
+
+  .label {
+    font-size: clamp(0.78rem, 1.05vw, 0.9rem);
+  }
+}
+
 .chair {
   fill: #f0f2f7;
   stroke: #2c2d36;

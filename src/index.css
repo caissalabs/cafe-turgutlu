@@ -66,6 +66,17 @@ h2 {
   font-size: 1.25rem;
 }
 
+/* Tablet / küçük laptop: tipografi biraz sıkılaşır (masa paneli ile uyumlu) */
+@media (min-width: 600px) and (max-width: 1279px) {
+  h1 {
+    font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+  }
+
+  h2 {
+    font-size: 1.12rem;
+  }
+}
+
 code {
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
   font-size: 0.9em;
