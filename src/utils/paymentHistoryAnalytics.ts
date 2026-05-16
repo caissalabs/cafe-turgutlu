@@ -1,4 +1,5 @@
 import type { CafePaymentHistoryRecord } from '@/types/paymentHistory'
+import type { CafeMenuCategory } from '@/types/menu'
 
 export type PeriodPreset = 'all' | 'day' | 'week' | 'month' | 'year'
 
@@ -67,6 +68,26 @@ export function filterByPeriodPreset(
   return rows.filter((r) => {
     const t = parsePaidAt(r.paidAt).getTime()
     return t >= start.getTime() && t <= now.getTime()
+  })
+}
+
+/** Ödemenin yerel saatinde [fromHour, toHour] dahil (0–23). from > to ise değerler otomatik yer değiştirir. */
+export function filterByLocalHourRange(
+  rows: CafePaymentHistoryRecord[],
+  fromHour: number,
+  toHour: number,
+): CafePaymentHistoryRecord[] {
+  let from = Math.min(23, Math.max(0, Math.floor(fromHour)))
+  let to = Math.min(23, Math.max(0, Math.floor(toHour)))
+  if (from > to) {
+    const t = from
+    from = to
+    to = t
+  }
+  if (from === 0 && to === 23) return rows
+  return rows.filter((r) => {
+    const h = parsePaidAt(r.paidAt).getHours()
+    return h >= from && h <= to
   })
 }
 
@@ -356,6 +377,43 @@ export function aggregateProducts(rows: CafePaymentHistoryRecord[]): ProductAgg[
     }
   }
   return [...map.values()].sort((a, b) => b.qty - a.qty)
+}
+
+/** Menüdeki tüm ürünleri satış rakamlarıyla birleştirir; menüde olmayan satışları sona ekler. */
+export function mergeMenuWithSales(
+  categories: CafeMenuCategory[],
+  rows: CafePaymentHistoryRecord[],
+): ProductAgg[] {
+  const sales = aggregateProducts(rows)
+  const salesMap = new Map(sales.map((s) => [s.key, s] as const))
+  const seenMenu = new Set<string>()
+  const out: ProductAgg[] = []
+
+  const sortedCats = [...categories].sort((a, b) => a.sortOrder - b.sortOrder)
+  for (const c of sortedCats) {
+    const items = [...c.items].sort((a, b) => a.sortOrder - b.sortOrder)
+    for (const it of items) {
+      seenMenu.add(it.id)
+      const s = salesMap.get(it.id)
+      out.push({
+        key: it.id,
+        name: it.name,
+        qty: s?.qty ?? 0,
+        revenue: s?.revenue ?? 0,
+      })
+    }
+  }
+
+  for (const s of sales) {
+    if (!seenMenu.has(s.key)) {
+      out.push({
+        ...s,
+        name: `${s.name} (menüde yok)`,
+      })
+    }
+  }
+
+  return out
 }
 
 export type ProductOption = { key: string; name: string }

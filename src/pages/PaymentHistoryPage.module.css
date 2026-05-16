@@ -143,57 +143,13 @@
   gap: 0.35rem;
 }
 
-.kpiCardTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
 .kpiCardLabel {
+  margin: 0 0 0.25rem;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
-}
-
-.kpiChipUp,
-.kpiChipDown,
-.kpiChipNeutral,
-.kpiChipMuted,
-.kpiChipTarget {
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 0.2rem 0.45rem;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.kpiChipUp {
-  background: var(--green-bg);
-  color: var(--green-text);
-}
-
-.kpiChipDown {
-  background: color-mix(in srgb, var(--error) 14%, var(--surface-lowest));
-  color: var(--error);
-}
-
-.kpiChipNeutral {
-  background: var(--surface-container);
-  color: var(--on-surface-variant);
-}
-
-.kpiChipMuted {
-  background: var(--surface-container);
-  color: var(--on-surface-variant);
-  opacity: 0.85;
-}
-
-.kpiChipTarget {
-  background: var(--primary-muted);
-  color: var(--primary);
 }
 
 .kpiCardAmount {
@@ -255,6 +211,90 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--on-surface-variant);
+}
+
+.densityToolbar {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-low);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 30%, transparent);
+  display: grid;
+  gap: 0.85rem;
+}
+
+.densityToolbarLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.densityPeriodToggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.densityPeriodBtn,
+.densityPeriodOn {
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  border: none;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.densityPeriodBtn {
+  background: transparent;
+  color: var(--on-surface-variant);
+}
+
+.densityPeriodBtn:hover {
+  background: color-mix(in srgb, var(--surface-container) 80%, transparent);
+}
+
+.densityPeriodOn {
+  background: var(--surface-lowest);
+  color: var(--primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.densityHourRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.densityHourLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.densityHourSelects {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.densitySelect {
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-lowest);
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--on-surface);
+}
+
+.densityHourSep {
+  color: var(--on-surface-variant);
+  font-weight: 600;
 }
 
 .heatmap {
@@ -406,6 +446,13 @@
   letter-spacing: 0.04em;
   color: var(--on-surface-variant);
   flex-shrink: 0;
+}
+
+.sideFootnote {
+  margin: 0.65rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--on-surface-variant);
 }
 
 /* Panel */
