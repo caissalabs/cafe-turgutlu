@@ -31,21 +31,21 @@
 
 .title {
   margin: 0 0 0.5rem;
-  font-size: 1.35rem;
+  font-size: 1.6335rem;
   font-weight: 700;
   color: var(--text);
 }
 
 .lead {
   margin: 0 0 0.75rem;
-  font-size: 1.05rem;
+  font-size: 1.2705rem;
   font-weight: 600;
   color: var(--accent);
 }
 
 .hint {
   margin: 0 0 1.25rem;
-  font-size: 0.88rem;
+  font-size: 1.0648rem;
   line-height: 1.45;
   color: var(--muted);
 }
@@ -64,7 +64,7 @@
   background: var(--accent);
   color: #fff;
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.21rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -86,7 +86,7 @@
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.21rem;
   font-weight: 600;
   cursor: pointer;
 }

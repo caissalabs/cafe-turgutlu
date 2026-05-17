@@ -22,6 +22,8 @@ export function OnboardingPage() {
 
   const [businessName, setBusinessName] = useState('')
   const [managerName, setManagerName] = useState('')
+  const [openingTime, setOpeningTime] = useState('09:00')
+  const [closingTime, setClosingTime] = useState('22:00')
   const [slug, setSlug] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -43,6 +45,8 @@ export function OnboardingPage() {
           businessName,
           managerName,
           slug,
+          openingTime,
+          closingTime,
         })
         if (result.ok) {
           navigate('/', { replace: true })
@@ -59,6 +63,8 @@ export function OnboardingPage() {
           businessName,
           managerName,
           slug,
+          openingTime,
+          closingTime,
           password,
         })
         if (result.ok) {
@@ -147,6 +153,40 @@ export function OnboardingPage() {
               onChange={(ev) => setSlug(ev.target.value.toLowerCase())}
               disabled={busy}
             />
+          </div>
+          <div className={styles.fieldRow}>
+            <div className={styles.hourField}>
+              <label className={styles.label} htmlFor="onb-open">
+                İşyeri açılış saati
+              </label>
+              <input
+                id="onb-open"
+                name="opening_time"
+                className={styles.input}
+                type="time"
+                step={300}
+                required
+                value={openingTime}
+                onChange={(ev) => setOpeningTime(ev.target.value)}
+                disabled={busy}
+              />
+            </div>
+            <div className={styles.hourField}>
+              <label className={styles.label} htmlFor="onb-close">
+                İşyeri kapanış saati
+              </label>
+              <input
+                id="onb-close"
+                name="closing_time"
+                className={styles.input}
+                type="time"
+                step={300}
+                required
+                value={closingTime}
+                onChange={(ev) => setClosingTime(ev.target.value)}
+                disabled={busy}
+              />
+            </div>
           </div>
 
           {!oauth ? (

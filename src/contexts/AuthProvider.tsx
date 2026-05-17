@@ -22,6 +22,7 @@ import {
   type RegisterInput,
 } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabaseClient'
+import { parseBusinessHoursForRpc } from '@/utils/businessHours'
 import { oauthRedirectBase } from '@/utils/oauthRedirectBase'
 
 type SessionMeta = {
@@ -566,6 +567,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [syncOAuthPanelSession],
   )
 
+  const changePanelPassword = useCallback(
+    async (input: { currentPassword?: string; newPassword: string }) => {
+      const nw = input.newPassword.trim()
+      if (nw.length < 8) {
+        return { ok: false, error: 'Yeni şifre en az 8 karakter olmalıdır.' }
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (session) {
+        return completePasswordRecovery(nw)
+      }
+
+      const u = panelUsername?.trim()
+      const cur = input.currentPassword?.trim() ?? ''
+      if (!u) {
+        return { ok: false, error: 'Oturum bilgisi eksik. Tekrar giriş yapın.' }
+      }
+      if (cur.length < 8) {
+        return { ok: false, error: 'Mevcut panel şifrenizi girin (en az 8 karakter).' }
+      }
+
+      const { error } = await supabase.rpc('change_panel_login_password', {
+        p_username: u,
+        p_current_password: cur,
+        p_new_password: nw,
+      })
+      if (error) {
+        console.error(error)
+        return { ok: false, error: rpcErrorMessage(error) }
+      }
+
+      return { ok: true }
+    },
+    [completePasswordRecovery, panelUsername],
+  )
+
   const completeOnboardingPassword = useCallback(
     async (input: CompleteOnboardingPasswordInput) => {
       const user = panelUsername?.trim()
@@ -581,12 +621,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      const parsedHours = parseBusinessHoursForRpc(input.openingTime, input.closingTime)
+      if (!parsedHours.ok) return { ok: false, error: parsedHours.error }
+      if (parsedHours.openingTime == null) {
+        return { ok: false, error: 'Açılış ve kapanış saatleri gerekli.' }
+      }
+
       const { data, error } = await supabase.rpc('complete_business_onboarding', {
         p_username: user,
         p_password: input.password,
         p_business_name: input.businessName.trim(),
         p_manager_name: input.managerName.trim(),
         p_slug: slug,
+        p_opening_time: parsedHours.openingTime,
+        p_closing_time: parsedHours.closingTime,
       })
 
       if (error) {
@@ -615,10 +663,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      const parsedHours = parseBusinessHoursForRpc(input.openingTime, input.closingTime)
+      if (!parsedHours.ok) return { ok: false, error: parsedHours.error }
+      if (parsedHours.openingTime == null) {
+        return { ok: false, error: 'Açılış ve kapanış saatleri gerekli.' }
+      }
+
       const { data, error } = await supabase.rpc('complete_business_onboarding_google', {
         p_business_name: input.businessName.trim(),
         p_manager_name: input.managerName.trim(),
         p_slug: slug,
+        p_opening_time: parsedHours.openingTime,
+        p_closing_time: parsedHours.closingTime,
       })
 
       if (error) {
@@ -684,6 +740,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       requestPasswordReset,
       completePasswordRecovery,
+      changePanelPassword,
       completeOnboardingPassword,
       completeOnboardingGoogle,
       signInWithGoogle,
@@ -702,6 +759,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       requestPasswordReset,
       completePasswordRecovery,
+      changePanelPassword,
       completeOnboardingPassword,
       completeOnboardingGoogle,
       signInWithGoogle,

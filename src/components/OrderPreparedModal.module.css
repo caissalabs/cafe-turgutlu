@@ -32,14 +32,14 @@
 
 .title {
   margin: 0 0 0.65rem;
-  font-size: 1.12rem;
+  font-size: 1.3552rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .text {
   margin: 0 0 1.2rem;
-  font-size: 0.93rem;
+  font-size: 1.1253rem;
   line-height: 1.5;
   color: var(--muted);
 }
@@ -56,7 +56,7 @@
   border: 1px solid var(--border);
   background: var(--surface);
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 1.1132rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -72,7 +72,7 @@
   border: none;
   background: var(--accent);
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 1.1132rem;
   font-weight: 600;
   color: #fff;
   cursor: pointer;

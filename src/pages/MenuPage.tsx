@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/Button'
+import { CustomerMenuM3 } from '@/components/CustomerMenuM3'
+import deckStyles from '@/components/CustomerMenuM3.module.css'
 import { formatPriceTry } from '@/constants/menu'
 import { useAuth } from '@/hooks/useAuth'
 import { clearMasaSession, useMasaNumber } from '@/hooks/useMasaNumber'
+import { useBusinessDisplayName } from '@/hooks/useBusinessDisplayName'
 import { useCafeMenu } from '@/hooks/useCafeMenu'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { usePublicBusinessId } from '@/hooks/usePublicBusinessId'
@@ -44,10 +47,14 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
   const { businessId: publicBusinessId, resolving: publicBizResolving, error: publicBizError } =
     usePublicBusinessId()
   const menuBusinessId = staff ? authBusinessId : publicBusinessId
+  const { displayName: businessBrandName } = useBusinessDisplayName(menuBusinessId)
+
+  const brandLabel = businessBrandName?.trim() || 'CafeNET'
+
+  const docSuffix = staff ? 'Menü (önizleme)' : 'CafeNET Menü'
+  useDocumentTitle(`${brandLabel} — ${docSuffix}`)
 
   const { masa, hasMasa } = useMasaNumber({ source: 'url-only' })
-
-  useDocumentTitle(staff ? 'CafeNET — Menü (önizleme)' : 'CafeNET — Menü')
 
   const {
     categories: menuCategories,
@@ -85,15 +92,26 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
   const cartTotal = useMemo(() => cartLines.reduce((s, l) => s + l.price * l.qty, 0), [cartLines])
   const cartItemCount = useMemo(() => cartLines.reduce((s, l) => s + l.qty, 0), [cartLines])
 
-  const addOne = useCallback((itemId: string, name: string, price: number) => {
-    setCart((prev) => {
-      const cur = prev[itemId]
-      return {
-        ...prev,
-        [itemId]: { key: itemId, name, price, qty: (cur?.qty ?? 0) + 1 },
-      }
-    })
-  }, [])
+  const addOne = useCallback(
+    (itemId: string, name: string, price: number, imageUrl: string | null | undefined = undefined) => {
+      setCart((prev) => {
+        const cur = prev[itemId]
+        const mergedImg =
+          imageUrl !== undefined ? (imageUrl || null) : (cur?.imageUrl ?? null)
+        return {
+          ...prev,
+          [itemId]: {
+            key: itemId,
+            name,
+            price,
+            qty: (cur?.qty ?? 0) + 1,
+            imageUrl: mergedImg,
+          },
+        }
+      })
+    },
+    [],
+  )
 
   const removeOne = useCallback((key: string) => {
     setCart((prev) => {
@@ -143,7 +161,10 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
     if (publicBizError || !menuBusinessId) {
       return <PublicStatusLine text="Link geçersiz." />
     }
-    if (!menuLoading && (!menuConfigured || menuFetchError)) {
+    if (!menuLoading && menuFetchError) {
+      return <PublicStatusLine text="Menü yüklenemedi. İnternetinizi kontrol edip sayfayı yenileyin." />
+    }
+    if (!menuLoading && !menuConfigured) {
       return <PublicStatusLine text="Şu anda bu işletmenin menüsü aktif değil." />
     }
   }
@@ -154,7 +175,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <span className={styles.brand}>CafeNET</span>
+            <span className={styles.brand} title={brandLabel}>{brandLabel}</span>
           </div>
         </header>
         <main className={styles.main}>
@@ -182,7 +203,7 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <span className={styles.brand}>CafeNET</span>
+            <span className={styles.brand} title={brandLabel}>{brandLabel}</span>
             <span className={styles.masaBadge}>Masa {masa}</span>
           </div>
         </header>
@@ -267,26 +288,37 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
             <ul className={styles.cartList}>
               {cartLines.map((line) => (
                 <li key={line.key} className={styles.cartItem}>
-                  <div className={styles.cartItemMain}>
-                    <span className={styles.cartItemName}>{line.name}</span>
-                    <span className={styles.cartItemPrice}>{formatPriceTry(line.price * line.qty)}</span>
-                  </div>
-                  <div className={styles.itemActions}>
-                    <button
-                      type="button"
-                      className={styles.qtyBtn}
-                      onClick={() => removeOne(line.key)}
-                    >
-                      −
-                    </button>
-                    <span className={styles.qtyVal}>{line.qty}</span>
-                    <button
-                      type="button"
-                      className={styles.qtyBtn}
-                      onClick={() => addOne(line.key, line.name, line.price)}
-                    >
-                      +
-                    </button>
+                  {line.imageUrl ? (
+                    <img src={line.imageUrl} alt="" className={styles.cartThumb} loading="lazy" />
+                  ) : (
+                    <div className={styles.cartThumbPh} aria-hidden />
+                  )}
+                  <div className={styles.cartItemBody}>
+                    <div className={styles.cartItemTop}>
+                      <span className={styles.cartItemName}>{line.name}</span>
+                      <span className={styles.cartItemPrice}>
+                        {formatPriceTry(line.price * line.qty)}
+                      </span>
+                    </div>
+                    <div className={styles.cartItemActionsRow}>
+                      <div className={styles.itemActions}>
+                        <button
+                          type="button"
+                          className={styles.qtyBtn}
+                          onClick={() => removeOne(line.key)}
+                        >
+                          −
+                        </button>
+                        <span className={styles.qtyVal}>{line.qty}</span>
+                        <button
+                          type="button"
+                          className={styles.qtyBtn}
+                          onClick={() => addOne(line.key, line.name, line.price)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </li>
               ))}
@@ -302,8 +334,6 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
             <p className={styles.submitError} role="alert">{submitError}</p>
           )}
         </main>
-
-        {!staff ? <footer className={styles.footer}>CafeNET</footer> : null}
 
         <div className={styles.cartBar} role="region" aria-label="Sipariş ver">
           <div className={styles.cartInner}>
@@ -326,149 +356,49 @@ export function MenuPage({ variant = 'public' }: MenuPageProps) {
 
   /* ── Menü adımı ── */
   return (
-    <div className={cn(styles.page, staff && styles.staff, staff && styles.pagePreview)}>
-      {!staff ? (
-        <header className={styles.header}>
-          <div className={styles.headerInner}>
-            <span className={styles.brand}>CafeNET</span>
-            <span className={styles.masaBadge}>Masa {masa}</span>
-          </div>
-        </header>
-      ) : (
-        <div className={styles.staffToolbar}>
-          <Link to="/home/menu" className={styles.backLink}>
-            ← Menü yönetimine dön
-          </Link>
-        </div>
-      )}
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>Menü</h1>
-        <p className={styles.subtitle}>
-          {staff
+    <>
+      <CustomerMenuM3
+        brandLabel={brandLabel}
+        masa={staff ? null : masa}
+        subtitle={
+          staff
             ? menuConfigured
               ? 'Müşteri ekranında böyle görünür. Sipariş eklemek için Masalar’daki ⋮ menüsünü kullanın.'
               : 'Menü henüz yapılandırılmadı'
             : menuConfigured
               ? 'Ürünlerimiz'
-              : 'Menü hazırlanıyor'}
-        </p>
-
-        {staff && menuFetchError ? (
-          <p className={styles.submitError} role="alert">
-            {menuFetchError}
-          </p>
-        ) : null}
-
-        {menuLoading ? <p className={styles.loadingText}>Menü yükleniyor…</p> : null}
-
-        {staff && !menuLoading && !menuConfigured ? (
-          <div className={styles.menuEmpty}>
-            <p>Müşteri menüsünde gösterilecek ürün yok. Önce menünüzü oluşturun.</p>
-            <Link to="/home/menu" className={styles.menuEmptyLink}>
-              Menüyü ayarla
-            </Link>
-          </div>
-        ) : null}
-
-        {!menuLoading && menuConfigured ? (
-          <>
-            <div className={styles.categories}>
-              {menuCategories.map((category) => (
-                <section key={category.id} aria-labelledby={`menu-${category.id}`}>
-                  <h2 className={styles.categoryTitle} id={`menu-${category.id}`}>
-                    {category.title}
-                  </h2>
-                  <ul className={styles.list}>
-                    {category.items.map((item) => {
-                      const qty = cart[item.id]?.qty ?? 0
-                      return (
-                        <li key={item.id} className={styles.item}>
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt=""
-                              className={styles.itemThumb}
-                              width={64}
-                              height={64}
-                            />
-                          ) : (
-                            <div className={styles.itemThumbPh} aria-hidden />
-                          )}
-                          <div className={styles.itemInfo}>
-                            <div className={styles.itemMain}>
-                              <span className={styles.itemName}>{item.name}</span>
-                              <span className={styles.itemPrice}>{formatPriceTry(item.price)}</span>
-                            </div>
-                            {item.description.trim() ? (
-                              <p className={styles.itemDesc}>{item.description}</p>
-                            ) : null}
-                            {item.allergens.length > 0 ? (
-                              <ul className={styles.allergenList}>
-                                {item.allergens.map((a) => (
-                                  <li key={a} className={styles.allergenTag}>
-                                    {a}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : null}
-                          </div>
-                          {!staff ? (
-                            <div className={styles.itemActions}>
-                              <button
-                                type="button"
-                                className={styles.qtyBtn}
-                                aria-label={`${item.name} eksilt`}
-                                onClick={() => removeOne(item.id)}
-                                disabled={qty === 0}
-                              >
-                                −
-                              </button>
-                              <span className={styles.qtyVal} aria-live="polite">
-                                {qty}
-                              </span>
-                              <button
-                                type="button"
-                                className={styles.qtyBtn}
-                                aria-label={`${item.name} ekle`}
-                                onClick={() => addOne(item.id, item.name, item.price)}
-                              >
-                                +
-                              </button>
-                            </div>
-                          ) : null}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </section>
-              ))}
+              : 'Menü hazırlanıyor'
+        }
+        categories={menuCategories}
+        loading={menuLoading}
+        staff={staff}
+        configured={menuConfigured}
+        errorText={menuFetchError}
+        staffBanner={
+          staff ? (
+            <div className={deckStyles.staffToolbar}>
+              <Link to="/home/menu">← Menü yönetimine dön</Link>
             </div>
-          </>
-        ) : null}
-      </main>
-
-      {!staff ? <footer className={styles.footer}>CafeNET</footer> : null}
-
-      {!staff ? (
-        <div className={styles.cartBar} role="region" aria-label="Sepet">
-          <div className={styles.cartInner}>
-            <div className={styles.cartSummary}>
-              <span className={styles.cartLabel}>
-                {cartItemCount > 0 ? `${cartItemCount} ürün seçildi` : 'Sepet boş'}
-              </span>
-              {cartTotal > 0 && <span className={styles.cartTotal}>{formatPriceTry(cartTotal)}</span>}
+          ) : undefined
+        }
+        staffEmpty={
+          staff ? (
+            <div className={styles.menuEmpty}>
+              <p>Müşteri menüsünde gösterilecek ürün yok. Önce menünüzü oluşturun.</p>
+              <Link to="/home/menu" className={styles.menuEmptyLink}>
+                Menüyü ayarla
+              </Link>
             </div>
-            <Button
-              type="button"
-              disabled={cartLines.length === 0 || !hasMasa || !menuConfigured}
-              onClick={() => setStep('cart')}
-            >
-              Sepete git
-            </Button>
-          </div>
-        </div>
-      ) : null}
-    </div>
+          ) : undefined
+        }
+        qtyForItem={(id) => cart[id]?.qty ?? 0}
+        onAdd={(item) => void addOne(item.id, item.name, item.price, item.imageUrl)}
+        onRemove={removeOne}
+        cartItemCount={cartItemCount}
+        cartTotalTry={cartTotal}
+        checkoutDisabled={cartLines.length === 0 || !hasMasa || !menuConfigured}
+        onCheckout={() => setStep('cart')}
+      />
+    </>
   )
 }

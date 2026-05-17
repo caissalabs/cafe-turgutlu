@@ -52,7 +52,7 @@
 
 .title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.452rem;
   font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--text);
@@ -61,7 +61,7 @@
 
 .subtitle {
   margin: 0.3rem 0 0;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   font-weight: 400;
   color: var(--muted);
   line-height: 1.45;
@@ -89,7 +89,7 @@
   border-radius: 10px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 1.21rem;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
@@ -115,7 +115,7 @@
 
 .orderPickLabel {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.968rem;
   font-weight: 500;
   color: var(--muted);
   margin-bottom: 0.35rem;
@@ -129,7 +129,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 1.089rem;
   font-weight: 400;
 }
 
@@ -145,7 +145,7 @@
   margin: 0 0 1rem;
   padding: 0.7rem 0.85rem;
   border-radius: 10px;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   font-weight: 400;
   line-height: 1.55;
   background: color-mix(in srgb, var(--accent) 7%, var(--surface));
@@ -162,13 +162,13 @@
   padding: 2.25rem 0;
   text-align: center;
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   font-weight: 400;
 }
 
 .catTitle {
   margin: 1.1rem 0 0.6rem;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--muted);
@@ -223,14 +223,14 @@
 }
 
 .itemName {
-  font-size: 0.9375rem;
+  font-size: 1.134375rem;
   font-weight: 500;
   color: var(--text);
   line-height: 1.35;
 }
 
 .itemPrice {
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
@@ -239,7 +239,7 @@
 
 .itemDesc {
   margin: 0.2rem 0 0;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   font-weight: 400;
   color: var(--muted);
   line-height: 1.4;
@@ -260,7 +260,7 @@
   height: 2.15rem;
   padding: 0;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 1.21rem;
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
@@ -282,7 +282,7 @@
 .qtyVal {
   min-width: 1.4rem;
   text-align: center;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -309,7 +309,7 @@
   border: 1px solid var(--border);
   display: grid;
   gap: 0.35rem;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   font-weight: 400;
 }
 
@@ -339,7 +339,7 @@
 
 .draftEmpty {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   font-weight: 400;
   color: var(--muted);
   padding: 0.4rem 0;
@@ -354,14 +354,14 @@
 }
 
 .totalLabel {
-  font-size: 0.8rem;
+  font-size: 0.968rem;
   font-weight: 500;
   color: var(--muted);
 }
 
 .totalVal {
   margin-top: 0.15rem;
-  font-size: 1.05rem;
+  font-size: 1.2705rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -375,7 +375,7 @@
   border: none;
   border-radius: 10px;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 1.089rem;
   font-weight: 600;
   color: #fff;
   cursor: pointer;
@@ -397,7 +397,7 @@
 
 .error {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   color: #c92a2a;
   font-weight: 500;
 }

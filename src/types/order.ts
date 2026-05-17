@@ -4,6 +4,8 @@ export type OrderLine = {
   name: string
   price: number
   qty: number
+  /** İstemci görünümü; eski sipariş kayıtlarında olmayabilir */
+  imageUrl?: string | null
 }
 
 export type CafeOrder = {

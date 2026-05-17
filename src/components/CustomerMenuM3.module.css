@@ -1,0 +1,953 @@
+/* Müşteri menüsü — sağlanan Tailwind/mock referansıyla hizalı (Material 3 paleti) */
+
+.shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f9fb;
+  color: #191c1e;
+  font-family:
+    'Inter',
+    'Source Sans 3',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.shell * {
+  box-sizing: border-box;
+}
+
+.materialIcon {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.36125rem;
+  line-height: 1;
+  letter-spacing: normal;
+  display: inline-block;
+  vertical-align: middle;
+  direction: ltr;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.materialIconMd {
+  font-size: 16px;
+}
+
+.materialIconHeader {
+  color: #004ac6;
+}
+
+.materialIconCart {
+  font-size: 22px;
+  color: #737686;
+}
+
+.thumbPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: #eceef0;
+}
+
+.staffToolbar {
+  padding: 0 max(16px, 4vw);
+  padding-top: 12px;
+  padding-bottom: 4px;
+}
+
+.staffToolbar a {
+  font-size: 15px;
+  font-weight: 600;
+  color: #004ac6;
+  text-decoration: none;
+}
+
+.staffToolbar a:hover {
+  text-decoration: underline;
+}
+
+.staffEmptyWrap {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #434655;
+  padding-bottom: 1rem;
+}
+
+.staffEmptyWrap a {
+  display: inline-block;
+  margin-top: 12px;
+  font-weight: 600;
+  color: #004ac6;
+}
+
+/* ── Üst çubuk ── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #ffffff;
+  border-bottom: 1px solid #c3c6d7;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px max(16px, 4vw);
+  gap: 12px;
+}
+
+.brandZone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.brandTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  color: #004ac6;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.masaPill {
+  flex-shrink: 0;
+  background: rgb(37 99 235 / 0.1);
+  padding: 6px 16px;
+  border-radius: 999px;
+}
+
+.masaText {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+  text-transform: none;
+  color: #004ac6;
+}
+
+/* ── Ana içerik ── */
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: max(14px, 3.75vw);
+  padding-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 28px;
+  color: #191c1e;
+}
+
+.heroSub {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: #434655;
+}
+
+/* ── Hoş geldiniz / ilk kategori seçimi ── */
+
+.welcomeBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 6px;
+}
+
+.welcomeTitle {
+  margin: 0;
+  margin-bottom: 14px;
+  font-size: clamp(1.5rem, 4.85vw, 1.8425rem);
+  font-weight: 800;
+  line-height: 1.22;
+  color: #191c1e;
+  letter-spacing: -0.02em;
+}
+
+.welcomeGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.welcomeCatBtn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 14px;
+  min-height: 0;
+  border: 1px solid rgb(195 198 215 / 0.52);
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.04);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.08s ease;
+}
+
+.welcomeCatTextCol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.welcomeCatChevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #aeb2c9;
+}
+
+.welcomeCatChevron .materialIcon {
+  font-size: 22px;
+}
+
+@media (hover: hover) {
+  .welcomeCatBtn:hover {
+    border-color: color-mix(in srgb, #004ac6 40%, #c3c6d7);
+    box-shadow: 0 5px 16px rgb(0 74 198 / 0.11);
+  }
+}
+
+.welcomeCatBtn:active {
+  transform: scale(0.99);
+}
+
+.welcomeCatBtn:focus-visible {
+  outline: 2px solid #004ac6;
+  outline-offset: 2px;
+}
+
+.welcomeCatTitle {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #004ac6;
+}
+
+.welcomeCatMeta {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #737686;
+}
+
+.browseBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: -2px 0 4px -4px;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #004ac6;
+  cursor: pointer;
+  border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .browseBack:hover {
+    text-decoration: underline;
+  }
+}
+
+.browseBack:focus-visible {
+  outline: 2px solid #004ac6;
+  outline-offset: 2px;
+}
+
+.browseBack .materialIcon {
+  font-size: 20px;
+}
+/* Yatay kategori */
+.catNav {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.catNav::-webkit-scrollbar {
+  display: none;
+}
+
+.catBtn {
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 6px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.catBtnInactive {
+  background: #e6e8ea;
+  color: #434655;
+}
+
+.catBtnInactive:hover {
+  background: rgb(224 227 229 / 0.85);
+}
+
+.catBtnActive {
+  background: #004ac6;
+  color: #ffffff;
+}
+
+.categoryHead {
+  border-bottom: 1px solid #c3c6d7;
+  padding-bottom: 8px;
+}
+
+.categoryHeading {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 24px;
+  color: #191c1e;
+}
+
+.products {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+/* Ürün kartı */
+.card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgb(195 198 215 / 0.35);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 0.04);
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.cardTapArea {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cardTapArea:focus-visible {
+  outline: 2px solid #004ac6;
+  outline-offset: 2px;
+}
+
+.cardQtyAside {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding-bottom: 1px;
+}
+
+.cardQtyAside .actionsRow {
+  margin-top: 0;
+}
+
+@media (hover: hover) {
+  .card:hover {
+    box-shadow: 0 6px 16px rgb(0 0 0 / 0.07);
+  }
+}
+
+.thumbWrap {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #eceef0;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.textCol {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.productName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #191c1e;
+}
+
+.desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+  color: #434655;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.price {
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+  color: #004ac6;
+  font-variant-numeric: tabular-nums;
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.tagAllergenWarn {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #ffdad6;
+  color: #93000a;
+}
+
+.tagAllergenMuted {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #d0e1fb;
+  color: #54647a;
+}
+
+.actionsRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.qtyShell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px;
+  border-radius: 8px;
+  background: #f2f4f6;
+  border: 1px solid #c3c6d7;
+}
+
+.qtyMicro {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  color: #737686;
+  padding: 0;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+@media (hover: hover) {
+  .qtyMicro:hover:not(:disabled) {
+    color: #004ac6;
+  }
+
+  .qtyMicroPlus:hover:not(:disabled) {
+    background: rgb(0 74 198 / 0.05);
+  }
+}
+
+.qtyMicro:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.qtyMicroPlus {
+  color: #004ac6;
+}
+
+.qtyMicroPlus:not(:disabled) {
+  cursor: pointer;
+}
+
+.qtyReadout {
+  min-width: 1rem;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+  color: #191c1e;
+}
+
+.loader {
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 15px;
+  color: #434655;
+}
+
+.inlineError {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 14px;
+  background: color-mix(in srgb, #e03131 12%, #ffffff);
+  border: 1px solid color-mix(in srgb, #e03131 28%, #c3c6d7);
+  color: #191c1e;
+}
+
+.emptyCategory {
+  padding: 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px dashed #c3c6d7;
+  text-align: center;
+  color: #434655;
+  font-size: 14px;
+}
+
+.staffBanner {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #434655;
+  padding: 0 max(16px, 4vw);
+  padding-top: 16px;
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+/* ── Sabit alt sepet çubuğu ── */
+.bottomBar {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px max(16px, 4vw);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border-top: 1px solid #c3c6d7;
+  box-shadow:
+    0 -4px 12px rgb(0 0 0 / 0.06),
+    0 -1px 0 rgb(0 0 0 / 0.04);
+}
+
+.bottomLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cartCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #eceef0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cartTexts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cartCaps {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #434655;
+  line-height: 1.2;
+}
+
+.cartSubtle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #191c1e;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkoutBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 12px 24px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #eeefff;
+  transition:
+    opacity 0.15s ease,
+    transform 0.1s ease;
+}
+
+.checkoutBtn:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.checkoutBtn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.checkoutBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Ürün detay modal ── */
+
+.detailOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 0;
+  background: rgb(25 28 30 / 0.48);
+  backdrop-filter: blur(5px);
+}
+
+@media (min-width: 540px) {
+  .detailOverlay {
+    align-items: center;
+    padding: 20px;
+  }
+}
+
+.detailDialog {
+  width: 100%;
+  max-width: 460px;
+  max-height: min(640px, 92dvh);
+  margin: 0;
+  background: #ffffff;
+  border-radius: 18px 18px 0 0;
+  box-shadow:
+    0 -8px 36px rgb(0 0 0 / 0.15),
+    0 12px 40px rgb(0 0 0 / 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  outline: none;
+}
+
+@media (min-width: 540px) {
+  .detailDialog {
+    border-radius: 16px;
+  }
+}
+
+.detailHero {
+  position: relative;
+  flex-shrink: 0;
+  height: clamp(168px, 42vw, 248px);
+  background: #eceef0;
+}
+
+.detailHeroImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detailDismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.94);
+  color: #191c1e;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.14);
+}
+
+.detailDismiss:focus-visible {
+  outline: 2px solid #004ac6;
+  outline-offset: 2px;
+}
+
+.detailBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px max(18px, 4vw);
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.detailCat {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #737686;
+}
+
+.detailHeading {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.28;
+  color: #191c1e;
+}
+
+.detailPrice {
+  margin: 12px 0 14px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #004ac6;
+  font-variant-numeric: tabular-nums;
+}
+
+.detailDesc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.54;
+  color: #434655;
+  white-space: pre-wrap;
+}
+
+.detailAllergenLead {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #737686;
+}
+
+.detailFooter {
+  flex-shrink: 0;
+  padding: 12px max(18px, 4vw);
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e6e8ea;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.detailFooterQty {
+  display: flex;
+  justify-content: center;
+}
+
+.detailFooterQty .qtyShell {
+  gap: 18px;
+  padding: 6px 10px;
+}
+
+.detailFooterQty .qtyMicro {
+  width: 44px;
+  height: 44px;
+}
+
+.detailFooterQty .materialIconMd {
+  font-size: 22px;
+}
+
+.detailFooterQty .qtyReadout {
+  font-size: 14px;
+  min-width: 2rem;
+}
+
+.detailKapatBtn {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #c3c6d7;
+  background: #f7f9fb;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #191c1e;
+  cursor: pointer;
+}
+
+.detailKapatBtn:focus-visible {
+  outline: 2px solid #004ac6;
+  outline-offset: 2px;
+}
+
+.detailFooterWide {
+  width: 100%;
+}
+
+.detailFooterActions {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.detailFooterActions .detailKapatBtn,
+.detailFooterActions .detailSepeteBtn {
+  flex: 1;
+  min-width: 0;
+}
+
+.detailSepeteBtn {
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #eeefff;
+  background: #2563eb;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgb(37 99 235 / 0.25);
+  transition:
+    opacity 0.15s ease,
+    transform 0.08s ease;
+}
+
+.detailSepeteBtn:hover {
+  opacity: 0.94;
+}
+
+.detailSepeteBtn:active {
+  transform: scale(0.98);
+}
+
+.detailSepeteBtn:focus-visible {
+  outline: 2px solid #004ac6;
+  outline-offset: 2px;
+}

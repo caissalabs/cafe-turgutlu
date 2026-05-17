@@ -1,12 +1,12 @@
-/* Ödeme geçmişi — referans HTML (Material / Inter) ile uyumlu yüzey renkleri */
+/* Ödeme geçmişi — referans HTML ile uyumlu yüzey renkleri (tipografi ana layout ile uyumlu) */
 
 .shell {
   --surface-lowest: #ffffff;
   --surface-low: #f2f4f6;
   --surface-container: #eceef0;
   --surface-container-high: #e6e8ea;
-  --on-surface: #191c1e;
-  --on-surface-variant: #434655;
+  --on-surface: #2b3038;
+  --on-surface-variant: #5a6170;
   --primary: #004ac6;
   --primary-muted: color-mix(in srgb, var(--primary) 16%, transparent);
   --outline-variant: #c3c6d7;
@@ -19,7 +19,7 @@
   --radius-lg: 8px;
 
   font-family:
-    Inter,
+    'Source Sans 3',
     system-ui,
     -apple-system,
     sans-serif;
@@ -35,7 +35,7 @@
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
   font-style: normal;
-  font-size: 1.35rem;
+  font-size: 1.6335rem;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
@@ -74,7 +74,7 @@
   margin: 0;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius);
-  font-size: 0.9rem;
+  font-size: 1.089rem;
   background: color-mix(in srgb, var(--error) 12%, var(--surface-lowest));
   border: 1px solid color-mix(in srgb, var(--error) 28%, var(--outline-variant));
 }
@@ -100,7 +100,7 @@
 
 .sectionTitle {
   margin: 0 0 1.25rem;
-  font-size: 1.125rem;
+  font-size: 1.36125rem;
   font-weight: 600;
   line-height: 1.4;
   display: flex;
@@ -109,7 +109,7 @@
 }
 
 .sectionTitleIcon {
-  font-size: 1.35rem;
+  font-size: 1.6335rem;
   color: var(--primary);
 }
 
@@ -145,7 +145,7 @@
 
 .kpiCardLabel {
   margin: 0 0 0.25rem;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -153,14 +153,14 @@
 }
 
 .kpiCardAmount {
-  font-size: 1.35rem;
+  font-size: 1.6335rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.25;
 }
 
 .kpiCardHint {
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   color: var(--on-surface-variant);
   margin-top: 0.15rem;
 }
@@ -198,7 +198,7 @@
 
 .densityTitle {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.36125rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -206,7 +206,7 @@
 }
 
 .densityMeta {
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -224,7 +224,7 @@
 }
 
 .densityToolbarLabel {
-  font-size: 0.65rem;
+  font-size: 0.7865rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -243,7 +243,7 @@
   border-radius: 6px;
   border: none;
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.8228rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -271,7 +271,7 @@
 }
 
 .densityHourLabel {
-  font-size: 0.75rem;
+  font-size: 0.99825rem;
   font-weight: 600;
   color: var(--on-surface-variant);
 }
@@ -295,7 +295,7 @@
   border: 1px solid var(--outline-variant);
   background: var(--surface-lowest);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.968rem;
   color: var(--on-surface);
 }
 
@@ -335,7 +335,7 @@
 }
 
 .heatmapDay {
-  font-size: 0.5625rem;
+  font-size: 0.680625rem;
   text-align: center;
   color: var(--on-surface-variant);
 }
@@ -359,12 +359,12 @@
 }
 
 .peakIcon {
-  font-size: 1rem;
+  font-size: 1.21rem;
   color: var(--primary);
 }
 
 .peakText {
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -393,7 +393,7 @@
 
 .sideCardTitle {
   margin: 0;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -409,7 +409,7 @@
   border-radius: 6px;
   border: 1px solid var(--outline-variant);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.99825rem;
   background: var(--surface-lowest);
   color: var(--on-surface);
 }
@@ -422,7 +422,7 @@
 
 .sideEmpty {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   color: var(--on-surface-variant);
 }
 
@@ -431,7 +431,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
 }
 
 .sideName {
@@ -440,7 +440,7 @@
 }
 
 .sideVal {
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--on-surface-variant);
@@ -448,7 +448,7 @@
 }
 
 .sideValMuted {
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--on-surface-variant);
@@ -457,7 +457,7 @@
 
 .sideFootnote {
   margin: 0.65rem 0 0;
-  font-size: 0.7rem;
+  font-size: 0.847rem;
   line-height: 1.4;
   color: var(--on-surface-variant);
 }
@@ -501,7 +501,7 @@
 
 .panelTitle {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.36125rem;
   font-weight: 600;
 }
 
@@ -516,7 +516,7 @@
   background: var(--secondary-container);
   color: var(--on-secondary-container);
   font: inherit;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   cursor: pointer;
@@ -528,7 +528,7 @@
 }
 
 .exportBtn .ms {
-  font-size: 1.15rem;
+  font-size: 1.3915rem;
 }
 
 .panelFilters {
@@ -549,7 +549,7 @@
   left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 1.15rem;
+  font-size: 1.3915rem;
   color: var(--on-surface-variant);
   pointer-events: none;
 }
@@ -561,7 +561,7 @@
   border: none;
   background: var(--surface-container);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   color: var(--on-surface);
   outline: none;
   box-shadow: 0 0 0 2px transparent;
@@ -577,7 +577,7 @@
   border: none;
   background: var(--surface-container);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   color: var(--on-surface);
   outline: none;
   cursor: pointer;
@@ -602,7 +602,7 @@
   border-radius: var(--radius-lg);
   border: none;
   font: inherit;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -636,7 +636,7 @@
   background: var(--surface-container);
   color: var(--on-surface-variant);
   font: inherit;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -647,7 +647,7 @@
 }
 
 .advancedBtn .ms {
-  font-size: 1.15rem;
+  font-size: 1.3915rem;
 }
 
 .advancedBody {
@@ -658,7 +658,7 @@
 
 .advancedHint {
   margin: 0 0 0.65rem;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   color: var(--on-surface-variant);
   line-height: 1.45;
 }
@@ -669,7 +669,7 @@
   border: none;
   background: none;
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.983125rem;
   font-weight: 600;
   color: var(--primary);
   cursor: pointer;
@@ -692,7 +692,7 @@
   padding: 0.28rem 0.55rem;
   border-radius: 999px;
   border: 1px solid var(--outline-variant);
-  font-size: 0.78rem;
+  font-size: 0.9438rem;
   cursor: pointer;
   user-select: none;
   background: color-mix(in srgb, var(--surface-container) 65%, var(--surface-lowest));
@@ -710,7 +710,7 @@
 
 .summaryLine {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
 }
 
 .summaryMuted {
@@ -778,19 +778,19 @@
 }
 
 .txAvatarIcon {
-  font-size: 1.65rem;
+  font-size: 1.9965rem;
   color: var(--primary);
 }
 
 .txTitle {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.36125rem;
   font-weight: 600;
 }
 
 .txMeta {
   margin: 0.15rem 0 0;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--on-surface-variant);
@@ -808,7 +808,7 @@
 }
 
 .txMidLabel {
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -827,7 +827,7 @@
   background: var(--surface-container);
   color: var(--on-surface-variant);
   border-radius: 999px;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 500;
   border: 1px solid var(--outline-variant);
 }
@@ -840,7 +840,7 @@
 }
 
 .txAmount {
-  font-size: 1.125rem;
+  font-size: 1.36125rem;
   font-weight: 600;
   color: var(--primary);
 }
@@ -853,14 +853,14 @@
   border-radius: 999px;
   background: var(--green-bg);
   color: var(--green-text);
-  font-size: 0.625rem;
+  font-size: 0.831875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .paidBadge .msFill {
-  font-size: 0.75rem;
+  font-size: 0.99825rem;
   vertical-align: middle;
 }
 .pagination {
@@ -882,7 +882,7 @@
 
 .paginationInfo {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   color: var(--on-surface-variant);
 }
 
@@ -915,7 +915,7 @@
 }
 
 .pageArrow .ms {
-  font-size: 1.15rem;
+  font-size: 1.3915rem;
 }
 
 .pageNum,
@@ -926,7 +926,7 @@
   border-radius: var(--radius-lg);
   border: none;
   font: inherit;
-  font-size: 0.6875rem;
+  font-size: 0.831875rem;
   font-weight: 600;
   cursor: pointer;
   background: transparent;
@@ -944,13 +944,13 @@
 
 .pageEllipsis {
   padding: 0 0.25rem;
-  font-size: 0.875rem;
+  font-size: 1.05875rem;
   color: var(--on-surface-variant);
 }
 
 @media (min-width: 600px) and (max-width: 1279px) {
   .kpiCardAmount {
-    font-size: 1.15rem;
+    font-size: 1.3915rem;
   }
 
   .heatmap {

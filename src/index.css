@@ -1,15 +1,18 @@
 :root {
-  --bg: #f6f7fb;
+  --bg: #f7f9fb;
   --surface: #ffffff;
-  --text: #1c1d24;
-  --muted: #5c6070;
-  --border: #e2e5ef;
-  --accent: #3b5bdb;
-  --accent-hover: #2f4ac7;
+  /* Biraz daha açık metin tonu — ince yazılarda daha net okunurluk */
+  --text: #2b3038;
+  --muted: #5a6170;
+  --border: #c3c6d7;
+  --accent: #004ac6;
+  --accent-hover: #0039a3;
   --radius: 10px;
   --shadow: 0 8px 24px rgba(28, 29, 36, 0.08);
+  --header-outline: rgb(195 198 215 / 0.35);
 
   font-family:
+    'Source Sans 3',
     system-ui,
     -apple-system,
     'Segoe UI',
@@ -23,6 +26,23 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.36125rem;
+  line-height: 1;
+  letter-spacing: normal;
+  display: inline-block;
+  vertical-align: middle;
+  direction: ltr;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
 }
 
 *,
@@ -59,27 +79,27 @@ h2 {
 }
 
 h1 {
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-size: clamp(2.1175rem, 4vw, 2.7225rem);
 }
 
 h2 {
-  font-size: 1.25rem;
+  font-size: 1.5125rem;
 }
 
-/* Tablet / küçük laptop: tipografi biraz sıkılaşır (masa paneli ile uyumlu) */
+/* Tablet / küçük laptop */
 @media (min-width: 600px) and (max-width: 1279px) {
   h1 {
-    font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+    font-size: clamp(1.7545rem, 2.6vw, 2.2385rem);
   }
 
   h2 {
-    font-size: 1.12rem;
+    font-size: 1.3552rem;
   }
 }
 
 code {
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
-  font-size: 0.9em;
+  font-size: 1.089em;
   padding: 0.15em 0.35em;
   border-radius: 6px;
   background: color-mix(in srgb, var(--border) 55%, transparent);

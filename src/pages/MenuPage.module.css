@@ -19,7 +19,7 @@
 
 .publicMinimalMessage {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.2705rem;
   line-height: 1.55;
   text-align: center;
   color: var(--text);
@@ -49,7 +49,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
@@ -92,9 +92,14 @@
 
 .brand {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.331rem;
   letter-spacing: -0.02em;
-  color: var(--text);
+  color: var(--accent);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .headerMeta {
@@ -103,9 +108,10 @@
 
 .masaBadge {
   display: inline-block;
+  flex-shrink: 0;
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 1.0285rem;
   font-weight: 600;
   background: color-mix(in srgb, var(--accent) 18%, var(--surface));
   color: var(--accent);
@@ -113,7 +119,7 @@
 }
 
 .masaWarn {
-  font-size: 0.82rem;
+  font-size: 0.9922rem;
   font-weight: 500;
   color: #a65105;
 }
@@ -128,14 +134,14 @@
 
 .title {
   margin: 0 0 0.35rem;
-  font-size: clamp(1.5rem, 4vw, 1.85rem);
+  font-size: clamp(1.815rem, 4vw, 2.2385rem);
   font-weight: 600;
   color: var(--text);
 }
 
 .subtitle {
   margin: 0 0 1rem;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   color: var(--muted);
 }
 
@@ -150,7 +156,7 @@
 
 .qrGateText {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.21rem;
   line-height: 1.55;
   color: var(--muted);
   max-width: 26rem;
@@ -168,7 +174,7 @@
 }
 
 .masaLabel {
-  font-size: 0.82rem;
+  font-size: 0.9922rem;
   font-weight: 500;
   color: var(--muted);
 }
@@ -187,7 +193,7 @@
   margin: 0 0 1rem;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius);
-  font-size: 0.92rem;
+  font-size: 1.1132rem;
 }
 
 .feedbackOk {
@@ -209,7 +215,7 @@
 
 .categoryTitle {
   margin: 0 0 0.65rem;
-  font-size: 1.05rem;
+  font-size: 1.2705rem;
   font-weight: 600;
   color: var(--text);
   padding-bottom: 0.35rem;
@@ -225,45 +231,53 @@
 }
 
 .item {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.65rem;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  column-gap: 0.85rem;
+  row-gap: 0.35rem;
+  align-items: start;
   padding: 0.65rem 0.85rem;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
-  font-size: 0.98rem;
+  font-size: 1.1858rem;
   color: var(--text);
 }
 
+.item:not(:has(.itemActions)) {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
 .itemThumb {
+  grid-column: 1;
+  grid-row: 1 / -1;
   width: 64px;
   height: 64px;
   object-fit: cover;
   border-radius: 8px;
-  flex-shrink: 0;
   border: 1px solid var(--border);
+  align-self: start;
 }
 
 .itemThumbPh {
+  grid-column: 1;
+  grid-row: 1 / -1;
   width: 64px;
   height: 64px;
-  flex-shrink: 0;
   border-radius: 8px;
   background: color-mix(in srgb, var(--muted) 12%, var(--surface));
   border: 1px solid var(--border);
+  align-self: start;
 }
 
 .itemInfo {
-  flex: 1;
+  grid-column: 2;
   min-width: 0;
 }
 
 .itemDesc {
   margin: 0.3rem 0 0;
-  font-size: 0.82rem;
+  font-size: 0.9922rem;
   line-height: 1.35;
   color: var(--muted);
 }
@@ -278,7 +292,7 @@
 }
 
 .allergenTag {
-  font-size: 0.68rem;
+  font-size: 0.8228rem;
   font-weight: 600;
   padding: 0.12rem 0.4rem;
   border-radius: 4px;
@@ -288,7 +302,7 @@
 
 .menuEmpty {
   padding: 1.25rem 0 0.5rem;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   color: var(--muted);
   line-height: 1.45;
 }
@@ -326,8 +340,12 @@
 }
 
 .itemActions {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
   display: inline-flex;
-  align-items: flex-start;
+  align-items: center;
+  align-self: start;
   padding-top: 0.1rem;
   gap: 0.35rem;
 }
@@ -338,7 +356,7 @@
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
-  font-size: 1.1rem;
+  font-size: 1.331rem;
   line-height: 1;
   cursor: pointer;
   color: var(--text);
@@ -373,7 +391,7 @@
   margin-top: auto;
   padding: 1rem 1.25rem;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 1.0285rem;
   color: var(--muted);
   border-top: 1px solid var(--border);
   background: var(--surface);
@@ -409,7 +427,7 @@
 }
 
 .cartLabel {
-  font-size: 0.78rem;
+  font-size: 0.9438rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -417,7 +435,7 @@
 }
 
 .cartTotal {
-  font-size: 1.15rem;
+  font-size: 1.3915rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -427,7 +445,7 @@
 .loadingText {
   margin-top: 3rem;
   text-align: center;
-  font-size: 1rem;
+  font-size: 1.21rem;
   color: var(--muted);
 }
 
@@ -438,14 +456,14 @@
 
 .existingTitle {
   margin: 0 0 0.3rem;
-  font-size: clamp(1.25rem, 4vw, 1.6rem);
+  font-size: clamp(1.5125rem, 4vw, 1.936rem);
   font-weight: 700;
   color: var(--text);
 }
 
 .existingSubtitle {
   margin: 0 0 1.5rem;
-  font-size: 1rem;
+  font-size: 1.21rem;
   color: var(--muted);
 }
 
@@ -471,12 +489,12 @@
 }
 
 .existingTime {
-  font-size: 0.8rem;
+  font-size: 0.968rem;
   color: var(--muted);
 }
 
 .existingSum {
-  font-size: 0.9rem;
+  font-size: 1.089rem;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -494,12 +512,12 @@
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 1.089rem;
   color: var(--text);
 }
 
 .existingQty {
-  font-size: 0.8rem;
+  font-size: 0.968rem;
   color: var(--muted);
 }
 
@@ -510,7 +528,7 @@
   padding: 0.6rem 0.9rem;
   border-radius: 8px;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -529,7 +547,7 @@
   background: var(--accent);
   color: #fff;
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.21rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
@@ -547,7 +565,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
@@ -563,7 +581,7 @@
   border: none;
   padding: 0.35rem 0;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   font-weight: 600;
   color: var(--accent);
   cursor: pointer;
@@ -580,7 +598,7 @@
   margin: 1.5rem 0;
   text-align: center;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
 }
 
 .cartList {
@@ -593,9 +611,8 @@
 
 .cartItem {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   gap: 0.65rem;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
@@ -603,9 +620,33 @@
   border: 1px solid var(--border);
 }
 
-.cartItemMain {
+.cartThumb {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.cartThumbPh {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 12%, var(--surface));
+  border: 1px solid var(--border);
+}
+
+.cartItemBody {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cartItemTop {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -615,16 +656,21 @@
 .cartItemName {
   flex: 1;
   min-width: 0;
-  font-size: 0.98rem;
+  font-size: 1.1858rem;
   color: var(--text);
 }
 
 .cartItemPrice {
   flex-shrink: 0;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   font-weight: 700;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
+}
+
+.cartItemActionsRow {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .cartSummaryCard {
@@ -640,16 +686,16 @@
 }
 
 .cartSummaryLabel {
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-size: 0.78rem;
+  font-size: 0.9438rem;
 }
 
 .cartSummaryTotal {
-  font-size: 1.2rem;
+  font-size: 1.452rem;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -659,8 +705,175 @@
   margin: 0 0 0.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius);
-  font-size: 0.92rem;
+  font-size: 1.1132rem;
   background: color-mix(in srgb, #e03131 12%, var(--surface));
   border: 1px solid color-mix(in srgb, #e03131 28%, var(--border));
   color: var(--text);
+}
+
+/* ── Telefon & tablet — dokunma ve okunurluk (--960px masaüstü hissi korunur) ── */
+
+@media (max-width: 959px) {
+  .page {
+    padding-bottom: calc(5.85rem + env(safe-area-inset-bottom));
+  }
+
+  .headerInner {
+    padding-inline: clamp(0.75rem, 4.2vw, 1.2rem);
+  }
+
+  .brand {
+    font-size: clamp(1.0185rem, 3.2vw, 1.1425rem);
+  }
+
+  .main {
+    max-width: none;
+    margin: 0;
+    padding-inline: clamp(0.65rem, 3.75vw, 1.125rem);
+    padding-top: 1.125rem;
+  }
+
+  .title {
+    font-size: clamp(1.255rem, 3.58vw, 1.4895rem);
+    margin-bottom: 0.28rem;
+  }
+
+  .subtitle {
+    font-size: clamp(0.925rem, 2.65vw, 0.9985rem);
+    margin-bottom: 0.855rem;
+  }
+
+  .categories {
+    gap: 1.2rem;
+  }
+
+  .categoryTitle {
+    font-size: clamp(0.9875rem, 2.88vw, 1.069rem);
+    margin-bottom: 0.465rem;
+  }
+
+  .list {
+    gap: 0.58rem;
+  }
+
+  .item {
+    font-size: 0.9585rem;
+    grid-template-columns: minmax(64px, 19vw) minmax(0, 1fr);
+    column-gap: 0.7rem;
+    row-gap: 0.415rem;
+    padding: 0.78rem clamp(0.625rem, 3.25vw, 0.875rem);
+    border-radius: var(--radius);
+  }
+
+  .item:not(:has(.itemActions)) {
+    grid-template-columns: minmax(64px, 19vw) minmax(0, 1fr);
+  }
+
+  .itemMain {
+    gap: 0.575rem;
+  }
+
+  .itemThumb,
+  .itemThumbPh {
+    width: 100%;
+    max-width: 72px;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 9px;
+  }
+
+  .itemInfo {
+    font-size: inherit;
+  }
+
+  .itemDesc {
+    font-size: clamp(0.855rem, 2.52vw, 0.9175rem);
+    line-height: 1.36;
+    margin-top: 0.265rem;
+  }
+
+  .allergenList {
+    gap: 0.295rem;
+    margin-top: 0.295rem;
+  }
+
+  .allergenTag {
+    font-size: 0.7605rem;
+    padding: 0.095rem 0.325rem;
+    border-radius: 5px;
+  }
+
+  .itemActions {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    padding-top: 0;
+    gap: 0.38rem;
+    margin-top: 0;
+  }
+
+  .qtyBtn {
+    width: 2.55rem;
+    height: 2.55rem;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 9px;
+    font-size: 1.22rem;
+  }
+
+  .qtyVal {
+    min-width: 1.58rem;
+    font-size: 0.9575rem;
+  }
+
+  .cartBar {
+    padding-inline: clamp(0.65rem, 4vw, 1rem);
+  }
+
+  .cartInner {
+    max-width: none;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .cartInner button {
+    min-height: 45px;
+    padding-inline: 0.9425rem;
+    font-size: 0.9785rem;
+  }
+
+  .cartLabel {
+    font-size: 0.8575rem;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  .cartTotal {
+    font-size: 1.1025rem;
+  }
+
+  .cartItem {
+    padding: 0.7425rem 0.8375rem;
+    gap: 0.5825rem;
+  }
+
+  .cartThumb,
+  .cartThumbPh {
+    width: 72px;
+    height: 72px;
+    border-radius: 9px;
+  }
+
+  .cartItemActionsRow .itemActions {
+    margin-inline-start: 0;
+  }
+
+  .cartItemName {
+    font-size: 0.9785rem;
+  }
+
+  .cartItemPrice {
+    font-size: 0.9515rem;
+  }
 }

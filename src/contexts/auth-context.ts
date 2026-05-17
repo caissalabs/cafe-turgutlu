@@ -13,6 +13,9 @@ export type CompleteOnboardingPasswordInput = {
   businessName: string
   managerName: string
   slug: string
+  /** HH:mm — formda dolu gönderilir. */
+  openingTime: string
+  closingTime: string
   password: string
 }
 
@@ -20,6 +23,8 @@ export type CompleteOnboardingGoogleInput = {
   businessName: string
   managerName: string
   slug: string
+  openingTime: string
+  closingTime: string
 }
 
 export type AuthContextValue = {
@@ -53,6 +58,12 @@ export type AuthContextValue = {
   syncOAuthPanelSession: () => Promise<void>
   /** Bekleme ekranı: businesses tablosundan active/onboarding_complete günceller */
   refreshActivationFromDb: () => Promise<void>
+
+  /** Şifre: oturum türüne göre güncellenir (e-posta/OAuth ile mevcut şifre gerekmez). */
+  changePanelPassword: (input: {
+    currentPassword?: string
+    newPassword: string
+  }) => Promise<{ ok: boolean; error?: string }>
 
   logout: () => Promise<void>
 }

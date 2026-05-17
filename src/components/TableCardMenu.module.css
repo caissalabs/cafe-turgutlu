@@ -41,14 +41,14 @@
 
 .modalTitle {
   margin: 0 0 0.65rem;
-  font-size: 1.15rem;
+  font-size: 1.3915rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .modalText {
   margin: 0 0 1.25rem;
-  font-size: 0.93rem;
+  font-size: 1.1253rem;
   line-height: 1.5;
   color: var(--muted);
 }
@@ -66,7 +66,7 @@
   border: 1px solid var(--border);
   background: var(--surface);
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 1.1132rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -82,7 +82,7 @@
   border: none;
   background: #c92a2a;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 1.1132rem;
   font-weight: 600;
   color: #fff;
   cursor: pointer;
@@ -98,7 +98,7 @@
   border: none;
   background: var(--accent);
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 1.1132rem;
   font-weight: 600;
   color: #fff;
   cursor: pointer;
@@ -133,7 +133,7 @@
 
 .loadingText {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   font-weight: 500;
   color: var(--muted);
 }
@@ -143,9 +143,9 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  width: 2rem;
-  height: 2rem;
+  gap: 2px;
+  width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
   border: none;
   border-radius: 8px;
@@ -173,35 +173,38 @@
 }
 
 .dot {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
   background: currentColor;
 }
 
 .menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   right: 0;
-  z-index: 30;
-  min-width: 11rem;
+  z-index: 45;
+  min-width: 10.375rem;
   margin: 0;
-  padding: 0.35rem 0;
+  padding: 0.3rem;
   list-style: none;
-  border-radius: var(--radius);
+  border-radius: 10px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: 0 10px 26px rgba(28, 29, 36, 0.12);
 }
 
 .menuItem {
   display: block;
   width: 100%;
-  padding: 0.55rem 0.85rem;
+  padding: 0.34rem 0.5rem;
   border: none;
+  border-radius: 7px;
   background: none;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
   text-align: left;
   color: var(--text);
   cursor: pointer;
@@ -231,9 +234,22 @@
 }
 
 .menuDivider {
-  border-top: 1px solid var(--border);
-  margin-top: 0.2rem;
-  padding-top: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menuDivider[role='separator'] {
+  height: 1px;
+  margin: 0.26rem calc(-1 * 0.3rem);
+  background: var(--border);
+  border: none;
+}
+
+.menuDivider:not([role='separator']) {
+  margin-top: 0.26rem;
+  padding-top: 0.26rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
 }
 
 .menuItemDeleteMasa {
@@ -262,7 +278,7 @@
 
 .inputLabel {
   display: block;
-  font-size: 0.82rem;
+  font-size: 0.9922rem;
   font-weight: 500;
   color: var(--muted);
   margin-bottom: 0.35rem;
@@ -277,7 +293,7 @@
   border: 1.5px solid var(--border);
   background: var(--bg);
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   color: var(--text);
   outline: none;
   box-sizing: border-box;
@@ -297,7 +313,7 @@
   border: 1.5px solid var(--border);
   background: var(--surface);
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   color: var(--text);
   cursor: pointer;
   box-sizing: border-box;

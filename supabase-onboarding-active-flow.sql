@@ -426,3 +426,8 @@ begin
   raise exception 'Akış değişti; önce register_google_skeleton_business ardından onboarding.';
 end;
 $$;
+
+-- ── Çalışma saati (opening_time / closing_time) ve güncel RPC imzaları ──
+-- Panel/onboarding kodu saat parametreleri ister. Bu dosya sonrası:
+-- **`supabase-business-opening-hours.sql` dosyasını mutlaka uygulayın;**
+-- aksi halde `complete_business_onboarding*` güncellenmez veya yanlış imza kalır.

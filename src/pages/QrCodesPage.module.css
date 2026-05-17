@@ -1,12 +1,12 @@
 .pageTitle {
   margin: 0 0 0.35rem;
-  font-size: 1.35rem;
+  font-size: 1.6335rem;
   font-weight: 600;
 }
 
 .lead {
   margin: 0 0 1.25rem;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   color: var(--muted);
   max-width: 52rem;
 }
@@ -14,7 +14,7 @@
 .originHint {
   margin: 0 0 1rem;
   padding: 0.65rem 0.75rem;
-  font-size: 0.82rem;
+  font-size: 0.9922rem;
   border-radius: 8px;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   border: 1px solid var(--border);
@@ -22,7 +22,7 @@
 }
 
 .originHint code {
-  font-size: 0.78rem;
+  font-size: 0.9438rem;
   word-break: break-all;
 }
 
@@ -45,7 +45,7 @@
 
 .cardTitle {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.21rem;
   font-weight: 600;
 }
 
@@ -68,7 +68,7 @@
 
 .urlMini {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8712rem;
   color: var(--muted);
   word-break: break-all;
   line-height: 1.35;
@@ -83,7 +83,7 @@
 }
 
 .placeholder {
-  font-size: 0.85rem;
+  font-size: 1.0285rem;
   color: var(--muted);
   text-align: center;
   padding: 1rem;
@@ -91,11 +91,11 @@
 
 .error {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.9922rem;
   color: #b91c1c;
 }
 
 .spin {
-  font-size: 0.85rem;
+  font-size: 1.0285rem;
   color: var(--muted);
 }

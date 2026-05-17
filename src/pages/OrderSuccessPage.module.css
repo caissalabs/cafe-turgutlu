@@ -17,7 +17,7 @@
 
 .brand {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.331rem;
   letter-spacing: -0.02em;
   color: var(--text);
 }
@@ -43,14 +43,14 @@
 
 .lead {
   margin: 0 0 0.65rem;
-  font-size: 0.98rem;
+  font-size: 1.1858rem;
   font-weight: 600;
   color: var(--accent);
 }
 
 .title {
   margin: 0 0 1rem;
-  font-size: clamp(1.35rem, 4vw, 1.65rem);
+  font-size: clamp(1.6335rem, 4vw, 1.9965rem);
   font-weight: 600;
   line-height: 1.35;
   color: var(--text);
@@ -58,14 +58,14 @@
 
 .note {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.1495rem;
   color: var(--muted);
 }
 
 .footer {
   padding: 1rem 1.25rem;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 1.0285rem;
   color: var(--muted);
   border-top: 1px solid var(--border);
   background: var(--surface);

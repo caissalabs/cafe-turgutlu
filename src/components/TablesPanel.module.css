@@ -1,33 +1,231 @@
 .wrap {
-  margin-top: 1.5rem;
+  --surface-low: #f2f4f6;
+
+  margin-top: 0;
   display: grid;
-  gap: 0.75rem;
+  gap: calc(1rem * 0.6579225);
 }
 
-.heading {
+.pageHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: calc(1rem * 0.6579225);
+  row-gap: calc(0.2rem * 0.6579225);
+  align-items: start;
+  margin: 0 0 calc(1.05rem * 0.6579225);
+  min-width: 0;
+}
+
+.pageHeader .heading {
+  grid-column: 1;
+  grid-row: 1;
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+  min-width: 0;
+  font-size: clamp(1.288rem, 2.08vw + 0.92rem, calc(1.705rem * 0.9405));
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
-.hint {
+.pageHeader .hint {
+  grid-column: 1;
+  grid-row: 2;
   margin: 0;
-  font-size: 0.9rem;
+  padding: 0;
+  min-width: 0;
+  font-size: calc(1.005rem * 0.9405);
+  font-weight: 400;
+  line-height: 1.35;
   color: var(--muted);
-  line-height: 1.45;
+}
+
+@media (max-width: 767px) {
+  .pageHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+  }
+
+  .pageHeader .hint {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .pageHeader .clockSlot {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+.pageHeader .clockSlot {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  justify-self: end;
+  max-width: min(17rem, 46vw);
+}
+
+@media (min-width: 768px) {
+  .pageHeader .hint {
+    line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* Saat blok sol metin kutusu kadar yüksek sütunu paylaşır; üst hizalı */
+  .pageHeader .clockSlot {
+    align-self: start;
+    max-width: min(17rem, 38vw);
+  }
 }
 
 .code {
-  font-size: 0.85em;
-  padding: 0.1em 0.35em;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--border) 55%, transparent);
+  display: inline;
+  padding: 0.055rem 0.26rem;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    monospace;
+  font-size: 0.955rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--border) 72%, transparent);
+  color: var(--text);
 }
 
 .loading {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1.164625rem;
+  color: var(--muted);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.filterBar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(0.55rem * 0.6579225);
+}
+
+@media (min-width: 768px) {
+  .filterBar {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: calc(0.875rem * 0.6579225);
+  }
+}
+
+.filterRail {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(4px * 0.6579225);
+  width: fit-content;
+  max-width: 100%;
+  padding: calc(4px * 0.6579225);
+  border-radius: calc(13px * 0.6579225);
+  background: var(--surface-low);
+}
+
+.filterBtn {
+  border: none;
+  border-radius: calc(11px * 0.6579225);
+  padding: calc(7px * 0.6579225) calc(14px * 0.6579225);
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: calc(0.8712rem * 0.8041275);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.08s ease;
+}
+
+.filterBtn:hover {
+  color: var(--accent);
+}
+
+.filterBtnActive {
+  color: var(--accent);
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgb(28 29 36 / 0.07),
+    0 4px 10px rgb(28 29 36 / 0.05);
+}
+
+.searchWrap {
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .searchWrap {
+    width: auto;
+    min-width: calc(260px * 0.6579225);
+    max-width: 20rem;
+    margin-left: auto;
+  }
+}
+
+.searchIcon {
+  pointer-events: none;
+  position: absolute;
+  left: calc(0.75rem * 0.6579225);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: calc(1.22rem * 0.8041275);
+  color: rgb(113 117 142);
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: calc(0.48rem * 0.6579225) calc(1rem * 0.6579225) calc(0.42rem * 0.6579225)
+    calc(2.75rem * 0.6579225);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: calc(14px * 0.6579225);
+  background: var(--surface);
+  font: inherit;
+  font-size: calc(0.9rem * 0.9405);
+  color: var(--text);
+  outline: none;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.searchInput:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 0 0 3px rgb(0 74 198 / 0.14);
+}
+
+.filterEmpty {
+  margin: 0;
+  padding: 0 calc(0.2rem * 0.6579225);
+  font-size: calc(1.05875rem * 0.9405);
+  line-height: 1.45;
   color: var(--muted);
 }
 
@@ -36,92 +234,25 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(1.5rem * 0.6579225);
 }
 
-/* Tablet / küçük laptop: daha kompakt kartlar ve tipografi */
-@media (min-width: 600px) and (max-width: 1279px) {
-  .wrap {
-    margin-top: 1.15rem;
-    gap: 0.62rem;
-  }
-
-  .heading {
-    font-size: 1rem;
-  }
-
-  .hint,
-  .loading {
-    font-size: 0.86rem;
-  }
-
-  .card {
-    min-height: 9rem;
-    padding: 0.42rem 0.42rem 0.62rem;
-    gap: 0.48rem;
-  }
-
-  .cardBody {
-    gap: 0.52rem;
-    padding: 0.3rem 0.28rem 0;
-  }
-
-  .itemBadge {
-    top: 0.38rem;
-    left: 0.42rem;
-    min-width: 1.38rem;
-    height: 1.38rem;
-    font-size: 0.72rem;
-  }
-
-  .cardMenu {
-    top: 0.38rem;
-    right: 0.38rem;
-  }
-
-  .orderCount {
-    font-size: 0.76rem;
-  }
-
-  .sum {
-    font-size: 0.88rem;
-  }
-
-  .preparedBtn {
-    padding: 0.38rem 0.52rem;
-    font-size: 0.8rem;
-  }
-
-  .addCard {
-    min-height: 9rem;
-    padding: 0.45rem;
-  }
-
-  .addPlus {
-    font-size: 2.35rem;
-  }
-}
-
-@media (min-width: 600px) and (max-width: 1099px) {
+@media (min-width: 640px) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 13rem));
-    justify-content: center;
-    gap: 0.78rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 1100px) and (max-width: 1279px) {
+@media (min-width: 768px) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(11rem, 14rem));
-    justify-content: center;
-    gap: 0.85rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .grid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -131,101 +262,180 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.6rem;
-  padding: 0.55rem 0.55rem 0.8rem;
-  min-height: 10.25rem;
-  border-radius: var(--radius);
+  gap: calc(0.68rem * 0.6579225);
+  padding: calc(1.05rem * 0.6579225) calc(1.05rem * 0.6579225) calc(0.95rem * 0.6579225);
+  min-height: calc(14.5rem * 0.6579225);
+  border-radius: calc(12px * 0.6579225);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   position: relative;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.22s ease,
+    background-color 0.16s ease;
 }
 
-/* Ürün adedi — sol üst */
+/* Tam kart alanı hover (padding dahil); Masa Ekle kutusu hariç */
+.card:not(.addCard):hover {
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 calc(14px * 0.6579225) calc(32px * 0.6579225) rgba(28, 29, 36, 0.12);
+  background: color-mix(in srgb, var(--border) 26%, var(--surface));
+}
+
+/* Ürün adedi — ikon üstü sağda (sadece dolu) */
 .itemBadge {
   position: absolute;
-  top: 0.45rem;
-  left: 0.5rem;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.35rem;
+  top: 0;
+  right: calc(0.125rem * 0.6579225);
+  min-width: calc(1.48rem * 0.6579225);
+  height: calc(1.48rem * 0.6579225);
+  padding: 0 calc(0.42rem * 0.6579225);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  font-size: 0.78rem;
+  font-size: calc(0.8954rem * 0.8041275);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   pointer-events: none;
+  z-index: 3;
 }
 
-/* 3-nokta menü sağ üstte sabit */
-.cardMenu {
-  position: absolute;
-  top: 0.45rem;
-  right: 0.45rem;
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(0.6rem * 0.6579225);
+  flex-shrink: 0;
 }
 
-/* Tıklanabilir alan */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(0.38rem * 0.6579225) calc(0.82rem * 0.6579225);
+  border-radius: calc(999px * 1);
+  font-size: calc(0.8228rem * 0.8041275);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.statusBadgeAvailable {
+  color: #047857;
+  background: rgb(236 253 245);
+}
+
+.statusBadgeOccupied {
+  color: #c92a2a;
+  background: rgb(220 38 38 / 0.1);
+}
+
+.menuSlot {
+  flex-shrink: 0;
+}
+
 .cardBody {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: stretch;
+  gap: calc(0.35rem * 0.6579225);
   flex: 1;
-  padding: 0.4rem 0.35rem 0;
+  min-height: 0;
+  margin-top: calc(0.05rem * 0.6579225);
+  padding: calc(0.05rem * 0.6579225) calc(0.08rem * 0.6579225) 0;
   border: none;
   background: transparent;
   cursor: pointer;
   border-radius: 8px;
-  transition: background 0.14s ease;
   text-align: center;
-}
-
-.cardBody:hover {
-  background: color-mix(in srgb, var(--border) 32%, transparent);
 }
 
 .cardBody:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-.cardTotals {
+.cardHero {
+  position: relative;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-  padding-top: 0.5rem;
-  border-top: 1px dashed var(--border);
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 calc(1.85rem * 0.6579225) calc(0.2rem * 0.6579225);
 }
 
-.orderCount {
-  font-size: 0.82rem;
+.statsBand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  margin-top: auto;
+  padding: calc(0.52rem * 0.6579225) calc(0.28rem * 0.6579225);
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.statsCol {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: calc(0.28rem * 0.6579225) calc(0.52rem * 0.6579225);
+}
+
+.statsCol:first-child {
+  border-right: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.statsColTutarInk .statsLabel {
+  color: var(--accent);
+}
+
+.statsLabel {
+  margin: 0 0 calc(0.22rem * 0.6579225);
+  padding: 0;
+  font-size: calc(0.7865rem * 0.8041275);
   font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--muted);
 }
 
-.sum {
-  font-size: 0.95rem;
+.statsValuePlain {
+  margin: 0;
+  padding: 0;
+  font-size: calc(1.2342rem * 0.8041275);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.statsValueCash {
+  margin: 0;
+  padding: 0;
+  font-size: calc(1.2342rem * 0.8041275);
   font-weight: 700;
+  letter-spacing: -0.012em;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
 
 .preparedBtn {
   width: 100%;
-  padding: 0.45rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, #2f9e44 45%, var(--border));
-  background: color-mix(in srgb, #2f9e44 14%, var(--surface));
+  padding: calc(0.5rem * 0.6579225) calc(0.72rem * 0.6579225);
+  border-radius: calc(8px * 0.6579225);
+  border: 1px solid color-mix(in srgb, #2f9e44 42%, var(--border));
+  background: color-mix(in srgb, #2f9e44 12%, var(--surface));
   font: inherit;
-  font-size: 0.85rem;
+  font-size: calc(0.983125rem * 0.8041275);
   font-weight: 700;
   color: #2b8a3e;
   cursor: pointer;
@@ -233,11 +443,11 @@
 }
 
 .preparedBtn:hover {
-  background: color-mix(in srgb, #2f9e44 25%, var(--surface));
+  background: color-mix(in srgb, #2f9e44 22%, var(--surface));
 }
 
 .preparedBtn:active {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
 
 .preparedBtn:focus-visible {
@@ -247,18 +457,26 @@
 
 .addErr {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 1.164625rem;
   color: #c92a2a;
 }
 
-/* Yeni masa — sadece + */
 .addCard {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  min-height: 10.25rem;
-  padding: 0.55rem;
-  border-style: dashed;
+  min-height: calc(14.5rem * 0.6579225);
+  padding: calc(1.05rem * 0.6579225);
+  border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent);
+  background: var(--surface);
+  border-radius: calc(12px * 0.6579225);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.22s ease;
+}
+
+.addCard:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
 .addCardBtn {
@@ -269,30 +487,121 @@
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--border) 28%, transparent);
+  border-radius: calc(10px * 0.6579225);
+  background: transparent;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  color: var(--muted);
+  color: inherit;
+  transition:
+    background 0.18s ease,
+    color 0.15s ease;
 }
 
 .addCardBtn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   color: var(--accent);
 }
 
 .addCardBtn:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .addCardBtn:disabled {
-  opacity: 0.4;
+  opacity: 0.38;
   cursor: not-allowed;
 }
 
+.addInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(0.85rem * 0.6579225);
+}
+
+.addCircle {
+  width: calc(3rem * 0.6579225);
+  height: calc(3rem * 0.6579225);
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--muted) 38%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.addCardBtn:hover:not(:disabled) .addCircle {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
 .addPlus {
-  font-size: 3rem;
+  font-size: calc(2.26875rem * 0.8041275);
   font-weight: 300;
   line-height: 1;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.addCardBtn:hover:not(:disabled) .addPlus {
+  color: var(--accent);
+}
+
+.addLabel {
+  font-size: calc(0.831875rem * 0.8041275);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.addCardBtn:hover:not(:disabled) .addLabel {
+  color: var(--accent);
+}
+
+/* Tablet — biraz sıkı */
+@media (min-width: 600px) and (max-width: 1279px) {
+  .wrap {
+    gap: calc(1.5rem * 0.6579225);
+  }
+
+  .pageHeader .heading {
+    font-size: calc(1.5488rem * 0.9405);
+  }
+
+  .pageHeader .hint {
+    font-size: calc(1.00188rem * 0.9405);
+  }
+
+  .card {
+    min-height: calc(13.75rem * 0.6579225);
+    padding: calc(0.92rem * 0.6579225) calc(0.92rem * 0.6579225) calc(0.85rem * 0.6579225);
+    gap: calc(0.58rem * 0.6579225);
+  }
+
+  .itemBadge {
+    top: 0;
+    right: calc(0.0625rem * 0.6579225);
+    min-width: calc(1.32rem * 0.6579225);
+    height: calc(1.32rem * 0.6579225);
+    font-size: calc(0.7986rem * 0.8041275);
+  }
+
+  .statsValuePlain {
+    font-size: calc(1.1132rem * 0.8041275);
+  }
+
+  .statsValueCash {
+    font-size: calc(1.1132rem * 0.8041275);
+  }
+
+  .statsLabel {
+    font-size: calc(0.7986rem * 0.8041275);
+  }
+
+  .addCard {
+    min-height: calc(13.75rem * 0.6579225);
+    padding: calc(0.92rem * 0.6579225);
+  }
 }
