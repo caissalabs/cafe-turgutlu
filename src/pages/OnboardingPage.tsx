@@ -12,8 +12,7 @@ export function OnboardingPage() {
   const {
     authMethod,
     panelUsername,
-    completeOnboardingPassword,
-    completeOnboardingGoogle,
+    completeOnboarding,
     isAuthenticated,
     onboardingComplete,
     active,
@@ -25,7 +24,6 @@ export function OnboardingPage() {
   const [openingTime, setOpeningTime] = useState('09:00')
   const [closingTime, setClosingTime] = useState('22:00')
   const [slug, setSlug] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -40,46 +38,22 @@ export function OnboardingPage() {
     setError(null)
     setBusy(true)
     try {
-      if (authMethod === 'oauth' || authMethod === 'email') {
-        const result = await completeOnboardingGoogle({
-          businessName,
-          managerName,
-          slug,
-          openingTime,
-          closingTime,
-        })
-        if (result.ok) {
-          navigate('/', { replace: true })
-        } else {
-          setError(result.error ?? 'Kayıt tamamlanamadı.')
-        }
+      const result = await completeOnboarding({
+        businessName,
+        managerName,
+        slug,
+        openingTime,
+        closingTime,
+      })
+      if (result.ok) {
+        navigate('/', { replace: true })
       } else {
-        if (!password) {
-          setError('Onayı tamamlamak için şifrenizi girin.')
-          setBusy(false)
-          return
-        }
-        const result = await completeOnboardingPassword({
-          businessName,
-          managerName,
-          slug,
-          openingTime,
-          closingTime,
-          password,
-        })
-        if (result.ok) {
-          setPassword('')
-          navigate('/', { replace: true })
-        } else {
-          setError(result.error ?? 'Kayıt tamamlanamadı.')
-        }
+        setError(result.error ?? 'Kayıt tamamlanamadı.')
       }
     } finally {
       setBusy(false)
     }
   }
-
-  const oauth = authMethod === 'oauth' || authMethod === 'email'
 
   return (
     <div className={styles.page}>
@@ -93,11 +67,7 @@ export function OnboardingPage() {
           <p className={styles.switchRow}>
             Hesap:{' '}
             <strong>
-              {authMethod === 'oauth'
-                ? 'Google ile bağlı'
-                : authMethod === 'email'
-                  ? `${panelUsername} (e-posta ile)`
-                  : panelUsername}
+              {authMethod === 'oauth' ? 'Google ile bağlı' : panelUsername}
             </strong>
           </p>
         ) : null}
@@ -188,26 +158,6 @@ export function OnboardingPage() {
               />
             </div>
           </div>
-
-          {!oauth ? (
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="onb-pass">
-                Şifreniz (doğrulama)
-              </label>
-              <input
-                id="onb-pass"
-                name="password"
-                className={styles.input}
-                type="password"
-                autoComplete="current-password"
-                required
-                maxLength={256}
-                value={password}
-                onChange={(ev) => setPassword(ev.target.value)}
-                disabled={busy}
-              />
-            </div>
-          ) : null}
 
           {error ? (
             <p className={styles.error} role="alert">

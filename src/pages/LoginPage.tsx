@@ -22,7 +22,7 @@ export function LoginPage() {
 
   const from = (location.state as LocationState | null)?.from?.pathname ?? '/'
 
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -39,7 +39,7 @@ export function LoginPage() {
     setError(null)
     setBusy(true)
     try {
-      const result = await login(username.trim(), password)
+      const result = await login(email.trim(), password)
       if (result.ok) {
         setPassword('')
         navigate('/', { replace: true })
@@ -56,7 +56,7 @@ export function LoginPage() {
       <div className={styles.card}>
         <h1 className={styles.title}>Yönetici girişi</h1>
         <p className={styles.subtitle}>
-          E-posta veya kullanıcı adınız ve şifrenizle panele giriş yapın.
+          E-posta ve şifrenizle panele giriş yapın.
         </p>
 
         <Button
@@ -99,7 +99,7 @@ export function LoginPage() {
         </Button>
 
         <div className={styles.divider} role="separator">
-          veya e-posta / kullanıcı adı ile
+          veya e-posta ile
         </div>
 
         <form
@@ -110,18 +110,18 @@ export function LoginPage() {
         >
           <div className={styles.field}>
             <label className={styles.label} htmlFor="admin-user">
-              E-posta veya kullanıcı adı
+              E-posta
             </label>
             <input
               id="admin-user"
-              name="username"
+              name="email"
               className={styles.input}
-              type="text"
-              autoComplete="username"
+              type="email"
+              autoComplete="email"
               required
-              maxLength={128}
-              value={username}
-              onChange={(ev) => setUsername(ev.target.value)}
+              maxLength={256}
+              value={email}
+              onChange={(ev) => setEmail(ev.target.value)}
               disabled={busy}
             />
           </div>

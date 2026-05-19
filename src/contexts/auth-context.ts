@@ -1,21 +1,10 @@
 import { createContext } from 'react'
 
-/** Şifre: eski yalnızca-RPC oturumu | oauth: Google | email: Supabase e-posta/şifre oturumu */
-export type AuthMethod = 'password' | 'oauth' | 'email'
+/** oauth: Google | email: Supabase e-posta/şifre oturumu */
+export type AuthMethod = 'oauth' | 'email'
 
 export type RegisterInput = {
-  username: string
-  password: string
   email: string
-}
-
-export type CompleteOnboardingPasswordInput = {
-  businessName: string
-  managerName: string
-  slug: string
-  /** HH:mm — formda dolu gönderilir. */
-  openingTime: string
-  closingTime: string
   password: string
 }
 
@@ -34,11 +23,11 @@ export type AuthContextValue = {
   onboardingComplete: boolean
   /** Supabase businesses.active — yönetici onayı */
   active: boolean
-  /** Şifre hesabı kullanıcı adı veya Google için teknik kullanıcı adı */
+  /** Panel e-postası veya dahili hesap etiketi */
   panelUsername: string | null
   authMethod: AuthMethod | null
 
-  login: (identifier: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
   register: (
     input: RegisterInput,
   ) => Promise<{ ok: boolean; error?: string; needsEmailConfirmation?: boolean }>
@@ -46,10 +35,7 @@ export type AuthContextValue = {
   requestPasswordReset: (email: string) => Promise<{ ok: boolean; error?: string }>
   /** Kurtarma oturumunda yeni şifre + bcrypt senkronu. */
   completePasswordRecovery: (newPassword: string) => Promise<{ ok: boolean; error?: string }>
-  completeOnboardingPassword: (
-    input: CompleteOnboardingPasswordInput,
-  ) => Promise<{ ok: boolean; error?: string }>
-  completeOnboardingGoogle: (
+  completeOnboarding: (
     input: CompleteOnboardingGoogleInput,
   ) => Promise<{ ok: boolean; error?: string }>
 
@@ -59,11 +45,8 @@ export type AuthContextValue = {
   /** Bekleme ekranı: businesses tablosundan active/onboarding_complete günceller */
   refreshActivationFromDb: () => Promise<void>
 
-  /** Şifre: oturum türüne göre güncellenir (e-posta/OAuth ile mevcut şifre gerekmez). */
-  changePanelPassword: (input: {
-    currentPassword?: string
-    newPassword: string
-  }) => Promise<{ ok: boolean; error?: string }>
+  /** Supabase Auth oturumu üzerinden şifre günceller. */
+  changePanelPassword: (input: { newPassword: string }) => Promise<{ ok: boolean; error?: string }>
 
   logout: () => Promise<void>
 }

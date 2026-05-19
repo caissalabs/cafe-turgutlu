@@ -17,7 +17,6 @@ export function RegisterPage() {
   } = useAuth()
   const navigate = useNavigate()
 
-  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -45,7 +44,6 @@ export function RegisterPage() {
     setBusy(true)
     try {
       const result = await register({
-        username,
         password,
         email,
       })
@@ -139,27 +137,10 @@ export function RegisterPage() {
         </Button>
 
         <div className={styles.divider} role="separator">
-          veya kullanıcı adı ile
+          veya e-posta ile
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit} autoComplete="on">
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="reg-user">
-              Kullanıcı adı
-            </label>
-            <input
-              id="reg-user"
-              name="username"
-              className={styles.input}
-              type="text"
-              autoComplete="username"
-              required
-              maxLength={128}
-              value={username}
-              onChange={(ev) => setUsername(ev.target.value)}
-              disabled={busy}
-            />
-          </div>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="reg-email">
               E-posta

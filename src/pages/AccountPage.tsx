@@ -36,16 +36,11 @@ export function AccountPage() {
   const [openingTime, setOpeningTime] = useState('')
   const [closingTime, setClosingTime] = useState('')
   const [hasSupabaseSession, setHasSupabaseSession] = useState(false)
-  const [verificationPassword, setVerificationPassword] = useState('')
-
-  const [pwdCurrent, setPwdCurrent] = useState('')
   const [pwdNew, setPwdNew] = useState('')
   const [pwdConfirm, setPwdConfirm] = useState('')
   const [pwdSaving, setPwdSaving] = useState(false)
   const [pwdError, setPwdError] = useState<string | null>(null)
   const [pwdOk, setPwdOk] = useState<string | null>(null)
-
-  const showVerificationForSave = !hasSupabaseSession
 
   const load = useCallback(async () => {
     if (!businessId) return
@@ -99,8 +94,13 @@ export function AccountPage() {
 
   const onProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!businessId || !panelUsername?.trim()) {
+    if (!businessId) {
       setError('Oturum bilgisi eksik. Tekrar giriş yapın.')
+      return
+    }
+
+    if (!hasSupabaseSession) {
+      setError('Oturum bulunamadı. Tekrar giriş yapın.')
       return
     }
 
@@ -116,11 +116,6 @@ export function AccountPage() {
       return
     }
 
-    if (showVerificationForSave && verificationPassword.length < 8) {
-      setError('Kaydetmek için panel şifrenizi girin (en az 8 karakter).')
-      return
-    }
-
     const hrs = parseBusinessHoursForRpc(openingTime, closingTime)
     if (!hrs.ok) {
       setError(hrs.error)
@@ -131,17 +126,15 @@ export function AccountPage() {
     setError(null)
     setSavedHint(null)
 
-    const rpcArgs: Record<string, string | null | undefined> = {
+    const { data, error: rpcErr } = await supabase.rpc('update_panel_business_profile', {
       p_business_name: bn,
       p_manager_display_name: mn,
       p_slug: slugNormalized,
-      p_username: showVerificationForSave ? panelUsername.trim() : null,
-      p_password: showVerificationForSave ? verificationPassword : null,
+      p_username: null,
+      p_password: null,
       p_opening_time: hrs.openingTime,
       p_closing_time: hrs.closingTime,
-    }
-
-    const { data, error: rpcErr } = await supabase.rpc('update_panel_business_profile', rpcArgs)
+    })
 
     setSaving(false)
 
@@ -162,7 +155,6 @@ export function AccountPage() {
     else setClosingTime('')
 
     setSavedHint('İşletme bilgileri kaydedildi.')
-    setVerificationPassword('')
   }
 
   const onPwdSubmit = async (e: React.FormEvent) => {
@@ -170,23 +162,18 @@ export function AccountPage() {
     setPwdError(null)
     setPwdOk(null)
 
+    if (!hasSupabaseSession) {
+      setPwdError('Oturum bulunamadı. Tekrar giriş yapın.')
+      return
+    }
+
     if (pwdNew !== pwdConfirm) {
       setPwdError('Yeni şifre iki alanda da aynı olmalıdır.')
       return
     }
 
-    if (showVerificationForSave) {
-      if (pwdCurrent.length < 8) {
-        setPwdError('Mevcut şifrenizi girin (en az 8 karakter).')
-        return
-      }
-    }
-
     setPwdSaving(true)
-    const r = await changePanelPassword({
-      currentPassword: showVerificationForSave ? pwdCurrent : undefined,
-      newPassword: pwdNew,
-    })
+    const r = await changePanelPassword({ newPassword: pwdNew })
     setPwdSaving(false)
 
     if (!r.ok) {
@@ -195,10 +182,8 @@ export function AccountPage() {
     }
 
     setPwdOk('Şifre güncellendi.')
-    setPwdCurrent('')
     setPwdNew('')
     setPwdConfirm('')
-    setVerificationPassword('')
   }
 
   if (!businessId) {
@@ -216,7 +201,7 @@ export function AccountPage() {
       <div>
         <h1 className={styles.title}>Hesabım</h1>
         <p className={styles.lead}>
-          İşletme bilgilerinizi ve şifrenizi güncelleyebilirsiniz. Kullanıcı adınız sabittir.
+          İşletme bilgilerinizi ve şifrenizi güncelleyebilirsiniz.
         </p>
       </div>
 
@@ -226,7 +211,7 @@ export function AccountPage() {
         <div className={styles.card}>
           <form id="account-profile-form" className={styles.formBlock} onSubmit={(e) => void onProfileSubmit(e)}>
             <div className={styles.identityLine}>
-              <span className={styles.identityLabel}>Kullanıcı adınız</span>
+              <span className={styles.identityLabel}>E-posta</span>
               <span className={styles.identityValue}>{panelUsername ?? ''}</span>
             </div>
 
@@ -301,26 +286,6 @@ export function AccountPage() {
               <p className={styles.sectionHint}>
                 Her iki saati birlikte doldurun veya ikisini boş bırakın (kayıtta çalışma saati tutulmaz).
               </p>
-
-              {showVerificationForSave ? (
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="account-verify-save">
-                    Mevcut panel şifreniz (kaydı doğrula)
-                  </label>
-                  <input
-                    id="account-verify-save"
-                    type="password"
-                    className={styles.input}
-                    value={verificationPassword}
-                    onChange={(e) => setVerificationPassword(e.target.value)}
-                    autoComplete="current-password"
-                    placeholder="Kaydetmek için mevcut şifre"
-                  />
-                  <p className={styles.sectionHint}>
-                    Yalnızca kullanıcı adıyla girişte kayıtlı şifreyi doğrulamak gerekir.
-                  </p>
-                </div>
-              ) : null}
             </div>
 
             {error ? (
@@ -342,27 +307,10 @@ export function AccountPage() {
           <form id="account-password-form" className={styles.formBlock} onSubmit={(e) => void onPwdSubmit(e)}>
             <h2 className={styles.cardTitle}>Şifre</h2>
             <p className={styles.sectionHint}>
-              {hasSupabaseSession
-                ? 'E-posta veya Google ile oturum açtıysanız şifreyi doğrudan değiştirebilirsiniz (Supabase ile senkron).'
-                : 'Önce mevcut şifrenizi doğrulayın; ardından yeni şifre kaydedilir.'}
+              E-posta veya Google ile oturum açtıysanız şifreyi doğrudan değiştirebilirsiniz.
             </p>
 
             <div className={styles.form}>
-              {showVerificationForSave ? (
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="account-pwd-current">
-                    Mevcut şifre
-                  </label>
-                  <input
-                    id="account-pwd-current"
-                    type="password"
-                    className={styles.input}
-                    value={pwdCurrent}
-                    onChange={(e) => setPwdCurrent(e.target.value)}
-                    autoComplete="current-password"
-                  />
-                </div>
-              ) : null}
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="account-pwd-new">
                   Yeni şifre
